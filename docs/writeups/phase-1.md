@@ -1,10 +1,10 @@
 # Phase 1 Writeup: Foundation
 
-Nov 6, 2026. Work is on the `phase-1` branch.
+Nov 6, 2026.
 
 ## Status
 
-**All five Phase 1 items are built, and the deliverable works on an API 37 emulator:** the app reads sleep data from Health Connect and manual input, stores it locally, and shows a raw sleep log. **One check is left:** Health Connect reads on a real device, which should happen before merging to `main`.
+**All five Phase 1 items are built, and the deliverable works on an API 37 emulator:** the app reads sleep data from Health Connect and manual input, stores it locally, and shows a raw sleep log. Phase 1 is merged to `main`. **Not recorded here:** a Health Connect read on a real device.
 
 ## What was implemented and how
 
@@ -64,4 +64,4 @@ Vico and WorkManager are declared but not used yet.
 | Target wake time and date are in both `UserProfile` and `ScheduleGoal` | Keep them only in `ScheduleGoal`. |
 | Where deleted Health Connect records are remembered | Keep a tombstone so sync skips them. Needed by Phase 5. |
 
-**Next:** run the app on a real device with a wearable, then merge `phase-1` and start Phase 2.
+**Next:** settle the overlap decision and start Phase 2.
