@@ -12,4 +12,6 @@ class GoalRepositoryImpl(private val dao: ScheduleGoalDao) : GoalRepository {
     override fun observeActive(): Flow<ScheduleGoal?> = dao.observeActive().map { it?.toDomain() }
 
     override suspend fun setActive(goal: ScheduleGoal): Long = dao.replaceActive(goal.toEntity())
+
+    override suspend fun update(goal: ScheduleGoal) = dao.update(goal.toEntity())
 }

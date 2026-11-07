@@ -145,7 +145,7 @@ interface ScheduleGoalDao {
     @Query("SELECT * FROM schedule_goal WHERE status = :status ORDER BY createdAtMillis DESC")
     fun observeByStatus(status: GoalStatus): Flow<List<ScheduleGoalEntity>>
 
-    @Query("SELECT * FROM schedule_goal WHERE status = 'ACTIVE' ORDER BY createdAtMillis DESC, id DESC LIMIT 1")
+    @Query("SELECT * FROM schedule_goal WHERE status IN ('ACTIVE', 'COMPLETED', 'MAINTAINED') ORDER BY createdAtMillis DESC, id DESC LIMIT 1")
     fun observeActive(): Flow<ScheduleGoalEntity?>
 
     @Query("UPDATE schedule_goal SET status = :to WHERE status = :from")
