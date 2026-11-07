@@ -34,6 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.circapin.R
 import com.circapin.domain.entities.EnergyForecast
+import com.circapin.domain.entities.GoalStatus
 import com.circapin.domain.entities.ModelState
 import com.circapin.domain.entities.ScheduleGoal
 import com.circapin.domain.entities.SleepScore
@@ -53,14 +54,19 @@ import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 
 @Composable
-fun HomeRoute(onEditGoal: () -> Unit, viewModel: HomeViewModel = hiltViewModel()) {
+fun HomeRoute(
+    onEditGoal: () -> Unit,
+    onProgress: () -> Unit = {},
+    onCheckIn: () -> Unit = {},
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeScreen(state = state, now = Clock.System.now(), onEditGoal = onEditGoal)
+    HomeScreen(state = state, now = Clock.System.now(), onEditGoal = onEditGoal, onProgress = onProgress, onCheckIn = onCheckIn)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit) {
+fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgress: () -> Unit = {}, onCheckIn: () -> Unit = {}) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_today)) }) }) { padding ->
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -70,11 +76,22 @@ fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit) {
                 .padding(16.dp),
         ) {
             if (state.loading) return@Column
+
+            if (state.todayCheckIn == null && state.model != null) {
+                CheckInPromptCard(onCheckIn)
+            }
+
             val goal = state.goal
+            if (state.goalStatus == GoalStatus.COMPLETED) {
+                GoalCompletedCard(onEditGoal)
+            } else if (state.goalStatus == GoalStatus.MAINTAINED) {
+                GoalMaintainedCard(onEditGoal)
+            }
+
             if (goal == null) {
                 NoGoalCard(onEditGoal)
-            } else {
-                GoalCard(goal, state.progress, onEditGoal)
+            } else if (state.goalStatus == GoalStatus.ACTIVE) {
+                GoalCard(goal, state.progress, onEditGoal, onProgress)
             }
             state.progress?.let { ShortfallCard(it, goal) }
             state.model?.let { BodyClockCard(it, state.progress, now) }
@@ -105,28 +122,81 @@ private fun NoGoalCard(onEditGoal: () -> Unit) {
 }
 
 @Composable
-private fun GoalCard(goal: ScheduleGoal, progress: GoalProgress?, onEditGoal: () -> Unit) {
+private fun GoalCard(goal: ScheduleGoal, progress: GoalProgress?, onEditGoal: () -> Unit, onProgress: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(16.dp)) {
-            Column(modifier = Modifier
-                .weight(1f)
-                .semantics(mergeDescendants = true) {}) {
-                Text(
-                    text = stringResource(R.string.home_goal, goal.targetWakeTime.formatted(), goal.targetDate.formatted()),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-                progress?.let {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier
+                    .weight(1f)
+                    .semantics(mergeDescendants = true) {}) {
                     Text(
-                        text = if (it.nightsLeft > 0) {
-                            stringResource(R.string.home_nights_left, pluralStringResource(R.plurals.nights, it.nightsLeft, it.nightsLeft))
-                        } else {
-                            stringResource(R.string.home_goal_date_reached)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = stringResource(R.string.home_goal, goal.targetWakeTime.formatted(), goal.targetDate.formatted()),
+                        style = MaterialTheme.typography.titleMedium,
                     )
+                    progress?.let {
+                        Text(
+                            text = if (it.nightsLeft > 0) {
+                                stringResource(R.string.home_nights_left, pluralStringResource(R.plurals.nights, it.nightsLeft, it.nightsLeft))
+                            } else {
+                                stringResource(R.string.home_goal_date_reached)
+                            },
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
+                TextButton(onClick = onEditGoal) { Text(stringResource(R.string.action_change_goal)) }
             }
-            TextButton(onClick = onEditGoal) { Text(stringResource(R.string.action_change_goal)) }
+            TextButton(onClick = onProgress) { Text(stringResource(R.string.progress_title)) }
+        }
+    }
+}
+
+@Composable
+private fun CheckInPromptCard(onCheckIn: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(stringResource(R.string.checkin_title), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.checkin_question), style = MaterialTheme.typography.bodyMedium)
+            }
+            Button(onClick = onCheckIn) { Text(stringResource(R.string.action_ok)) }
+        }
+    }
+}
+
+@Composable
+private fun GoalCompletedCard(onEditGoal: () -> Unit) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(stringResource(R.string.goal_completed_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.goal_completed_body))
+            Button(onClick = onEditGoal) { Text(stringResource(R.string.home_no_goal_title)) }
+        }
+    }
+}
+
+@Composable
+private fun GoalMaintainedCard(onEditGoal: () -> Unit) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(stringResource(R.string.goal_maintained), style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onEditGoal) { Text(stringResource(R.string.home_no_goal_title)) }
         }
     }
 }

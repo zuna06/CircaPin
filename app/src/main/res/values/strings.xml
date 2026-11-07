@@ -178,4 +178,69 @@
     <string name="sleep_entry_error_too_long">This is longer than a single sleep. Check the dates.</string>
     <string name="sleep_entry_error_too_long_nap">Naps can be up to 3 hours. Log longer sleep with Log sleep.</string>
     <string name="sleep_entry_error_overlap">This overlaps sleep you\'ve already logged.</string>
+
+    <!-- Notifications -->
+    <string name="channel_light">Light reminders</string>
+    <string name="channel_caffeine">Caffeine reminders</string>
+    <string name="channel_bedtime">Bedtime reminders</string>
+    <string name="channel_check_in">Morning check-in</string>
+    <string name="channel_meal">Meal timing</string>
+    <string name="reminder_light_title">Time for bright light</string>
+    <string name="reminder_light_text">Get outside or turn on bright lights to shift your body clock.</string>
+    <string name="reminder_caffeine_title">Last call for caffeine</string>
+    <string name="reminder_caffeine_text">After this, caffeine may interfere with tonight\'s sleep.</string>
+    <string name="reminder_bedtime_title">Bedtime coming up</string>
+    <string name="reminder_bedtime_text">Start winding down for bed soon.</string>
+    <string name="reminder_checkin_title">Morning check-in</string>
+    <string name="reminder_checkin_text">How alert do you feel this morning? Tap to check in.</string>
+    <string name="reminder_meal_title">Last meal reminder</string>
+    <string name="reminder_meal_text">Aim to finish eating soon to help your body clock wind down.</string>
+    <string name="reminder_snooze">Remind me in 30 min</string>
+
+    <!-- Check-in -->
+    <string name="checkin_title">Morning check-in</string>
+    <string name="checkin_question">How alert do you feel?</string>
+    <string name="checkin_level_1">Still asleep</string>
+    <string name="checkin_level_2">Groggy</string>
+    <string name="checkin_level_3">OK</string>
+    <string name="checkin_level_4">Alert</string>
+    <string name="checkin_level_5">Wide awake</string>
+    <string name="checkin_done">Checked in for today</string>
+    <string name="checkin_correction">Your body clock estimate was adjusted by %1$d min based on your recent check-ins.</string>
+    <string name="checkin_no_correction">Thanks! Your body clock estimate matches how you feel.</string>
+
+    <!-- Progress -->
+    <string name="progress_title">Progress</string>
+    <string name="progress_shift_label">Body clock shift</string>
+    <string name="progress_target_label">Target</string>
+    <string name="progress_current_label">Current</string>
+    <string name="progress_start_label">Start</string>
+    <string name="progress_days_in">Day %1$d of %2$d</string>
+    <string name="progress_completed">Goal reached</string>
+    <string name="progress_maintained">Maintaining your schedule</string>
+    <string name="progress_timeline_label">DLMO over time</string>
+    <string name="progress_empty">Progress will appear once the model has tracked a few days.</string>
+
+    <!-- Settings -->
+    <string name="nav_settings">Settings</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_reminders_section">Reminders</string>
+    <string name="settings_light_reminder">Bright light</string>
+    <string name="settings_caffeine_reminder">Caffeine cutoff</string>
+    <string name="settings_bedtime_reminder">Bedtime</string>
+    <string name="settings_checkin_reminder">Morning check-in</string>
+    <string name="settings_meal_reminder">Meal timing</string>
+    <string name="settings_exact_alarms">Exact alarm timing</string>
+    <string name="settings_exact_alarms_summary">Allows reminders at the exact time. Without this, reminders may be a few minutes late.</string>
+    <string name="settings_exact_alarms_granted">Granted</string>
+    <string name="settings_exact_alarms_denied">Not granted — tap to open settings</string>
+    <string name="settings_background_sync">Background sleep sync</string>
+    <string name="settings_background_sync_summary">Sync sleep data even when the app isn\'t open. Enables automatic daily planning.</string>
+    <string name="settings_background_sync_granted">Granted</string>
+    <string name="settings_background_sync_denied">Not granted — tap to open settings</string>
+
+    <!-- Goal completion -->
+    <string name="goal_completed_title">Goal reached!</string>
+    <string name="goal_completed_body">Your body clock has arrived. CircaPin will keep a plan that holds your schedule. Set a new goal whenever you\'re ready.</string>
+    <string name="goal_maintained">Holding your schedule</string>
 </resources>

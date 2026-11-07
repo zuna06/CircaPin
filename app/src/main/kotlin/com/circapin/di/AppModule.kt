@@ -4,20 +4,29 @@ import android.content.Context
 import com.circapin.data.healthconnect.HealthConnectSleepSource
 import com.circapin.data.healthconnect.SleepSessionSource
 import com.circapin.data.local.CircaPinDatabase
+import com.circapin.data.repository.CheckInRepositoryImpl
 import com.circapin.data.repository.GoalRepositoryImpl
 import com.circapin.data.repository.ModelRepositoryImpl
 import com.circapin.data.repository.PlanRepositoryImpl
+import com.circapin.data.repository.PreferencesRepositoryImpl
 import com.circapin.data.repository.SleepRepositoryImpl
+import com.circapin.data.repository.SnapshotRepositoryImpl
 import com.circapin.data.repository.UserProfileRepositoryImpl
+import com.circapin.domain.repository.CheckInRepository
 import com.circapin.domain.repository.GoalRepository
 import com.circapin.domain.repository.ModelRepository
 import com.circapin.domain.repository.PlanRepository
+import com.circapin.domain.repository.PreferencesRepository
 import com.circapin.domain.repository.SleepRepository
+import com.circapin.domain.repository.SnapshotRepository
 import com.circapin.domain.repository.UserProfileRepository
 import com.circapin.domain.usecases.CompleteOnboardingUseCase
+import com.circapin.domain.usecases.GoalCompletionUseCase
 import com.circapin.domain.usecases.LogSleepUseCase
+import com.circapin.domain.usecases.ProcessCheckInUseCase
 import com.circapin.domain.usecases.RefreshTodayUseCase
 import com.circapin.domain.usecases.UpdateModelUseCase
+import com.circapin.notifications.ReminderScheduler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -85,4 +94,30 @@ object AppModule {
 
     @Provides
     fun refreshTodayUseCase(plans: PlanRepository, clock: Clock) = RefreshTodayUseCase(plans, clock)
+
+    @Provides
+    @Singleton
+    fun snapshotRepository(database: CircaPinDatabase): SnapshotRepository =
+        SnapshotRepositoryImpl(database.modelSnapshotDao())
+
+    @Provides
+    @Singleton
+    fun checkInRepository(database: CircaPinDatabase): CheckInRepository =
+        CheckInRepositoryImpl(database.checkInDao())
+
+    @Provides
+    @Singleton
+    fun preferencesRepository(@ApplicationContext context: Context): PreferencesRepository =
+        PreferencesRepositoryImpl(context)
+
+    @Provides
+    fun processCheckInUseCase(checkIns: CheckInRepository, models: ModelRepository) =
+        ProcessCheckInUseCase(checkIns, models)
+
+    @Provides
+    fun goalCompletionUseCase(goals: GoalRepository) = GoalCompletionUseCase(goals)
+
+    @Provides
+    @Singleton
+    fun reminderScheduler(@ApplicationContext context: Context) = ReminderScheduler(context)
 }

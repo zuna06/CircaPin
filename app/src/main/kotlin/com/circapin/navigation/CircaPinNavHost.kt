@@ -29,9 +29,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.circapin.R
 import com.circapin.domain.repository.UserProfileRepository
+import com.circapin.ui.checkin.CheckInRoute
 import com.circapin.ui.home.HomeRoute
 import com.circapin.ui.onboarding.GoalSetupRoute
 import com.circapin.ui.onboarding.OnboardingRoute
+import com.circapin.ui.progress.ProgressRoute
+import com.circapin.ui.settings.SettingsRoute
 import com.circapin.ui.sleeplog.SLEEP_ENTRY_IS_NAP_ARG
 import com.circapin.ui.sleeplog.SleepEntryRoute
 import com.circapin.ui.sleeplog.SleepLogRoute
@@ -49,10 +52,14 @@ private const val EDIT_GOAL_ROUTE = "edit_goal"
 private const val HOME_ROUTE = "home"
 private const val SLEEP_LOG_ROUTE = "sleep_log"
 private const val SLEEP_ENTRY_ROUTE = "sleep_entry"
+private const val SETTINGS_ROUTE = "settings"
+private const val PROGRESS_ROUTE = "progress"
+private const val CHECK_IN_ROUTE = "check_in"
 
 private enum class Tab(val route: String, @StringRes val label: Int, @DrawableRes val icon: Int) {
     TODAY(HOME_ROUTE, R.string.nav_today, R.drawable.ic_nav_today),
     SLEEP_LOG(SLEEP_LOG_ROUTE, R.string.nav_sleep_log, R.drawable.ic_nav_sleep_log),
+    SETTINGS(SETTINGS_ROUTE, R.string.nav_settings, R.drawable.ic_nav_settings),
 }
 
 /** Works out the first screen once, so finishing onboarding doesn't rebuild the graph. */
@@ -98,8 +105,17 @@ fun CircaPinNavHost(viewModel: StartRouteViewModel = hiltViewModel()) {
                 GoalSetupRoute(onSaved = { navController.popBackStack() }, onCancel = { navController.popBackStack() })
             }
             composable(HOME_ROUTE) {
-                HomeRoute(onEditGoal = { navController.navigate(EDIT_GOAL_ROUTE) })
+                HomeRoute(
+                    onEditGoal = { navController.navigate(EDIT_GOAL_ROUTE) },
+                    onProgress = { navController.navigate(PROGRESS_ROUTE) },
+                    onCheckIn = { navController.navigate(CHECK_IN_ROUTE) },
+                )
             }
+            composable(PROGRESS_ROUTE) { ProgressRoute() }
+            composable(CHECK_IN_ROUTE) {
+                CheckInRoute(onDone = { navController.popBackStack() })
+            }
+            composable(SETTINGS_ROUTE) { SettingsRoute() }
             composable(SLEEP_LOG_ROUTE) {
                 SleepLogRoute(onAddEntry = { isNap -> navController.navigate("$SLEEP_ENTRY_ROUTE/$isNap") })
             }

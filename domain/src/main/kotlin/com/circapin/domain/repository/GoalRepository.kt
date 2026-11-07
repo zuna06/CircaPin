@@ -9,4 +9,7 @@ interface GoalRepository {
 
     /** Makes [goal] the active one. Any previous active goal is marked abandoned. Returns the new goal's ID. */
     suspend fun setActive(goal: ScheduleGoal): Long
+
+    /** Updates an existing goal in place (e.g. status change). */
+    suspend fun update(goal: ScheduleGoal)
 }

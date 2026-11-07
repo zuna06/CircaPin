@@ -2,13 +2,16 @@ package com.circapin.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.circapin.domain.entities.CheckIn
 import com.circapin.domain.entities.DayPlan
+import com.circapin.domain.entities.GoalStatus
 import com.circapin.domain.entities.ModelState
 import com.circapin.domain.entities.ScheduleGoal
 import com.circapin.domain.entities.SleepScore
 import com.circapin.domain.model.CircadianModel
 import com.circapin.domain.model.GoalProgress
 import com.circapin.domain.model.ShiftPlanner
+import com.circapin.domain.repository.CheckInRepository
 import com.circapin.domain.repository.GoalRepository
 import com.circapin.domain.repository.ModelRepository
 import com.circapin.domain.repository.PlanRepository
@@ -21,6 +24,7 @@ import kotlin.time.Clock
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.datetime.TimeZone
 
@@ -34,6 +38,8 @@ data class HomeUiState(
     val model: ModelState? = null,
     val day: DayPlan? = null,
     val score: SleepScore? = null,
+    val todayCheckIn: CheckIn? = null,
+    val goalStatus: GoalStatus? = null,
 )
 
 @HiltViewModel
@@ -42,6 +48,7 @@ class HomeViewModel @Inject constructor(
     models: ModelRepository,
     plans: PlanRepository,
     profiles: UserProfileRepository,
+    checkIns: CheckInRepository,
     clock: Clock,
     timeZoneProvider: Provider<TimeZone>,
 ) : ViewModel() {
@@ -53,14 +60,23 @@ class HomeViewModel @Inject constructor(
         models.observeState(),
         plans.observeDay(date),
         plans.observeScore(date),
-        profiles.observeProfile(),
-    ) { goal, model, day, score, profile ->
+        combine(profiles.observeProfile(), checkIns.observeAll().map { list -> list.find { it.date == date } }) { p, c -> p to c },
+    ) { goal, model, day, score, (profile, checkIn) ->
         val progress = if (goal != null && model != null && profile != null) {
             ShiftPlanner.progress(CircadianModel.dlmoClockTime(model, timeZone), goal, profile.sleepNeedHours, date)
         } else {
             null
         }
-        HomeUiState(loading = false, goal = goal, progress = progress, model = model, day = day, score = score)
+        HomeUiState(
+            loading = false,
+            goal = goal,
+            progress = progress,
+            model = model,
+            day = day,
+            score = score,
+            todayCheckIn = checkIn,
+            goalStatus = goal?.status,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HomeUiState())
 
     private companion object {

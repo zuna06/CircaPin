@@ -2,21 +2,26 @@ package com.circapin
 
 import com.circapin.domain.repository.GoalRepository
 import com.circapin.domain.repository.ModelRepository
+import com.circapin.domain.repository.PlanRepository
+import com.circapin.domain.repository.PreferencesRepository
 import com.circapin.domain.repository.SleepRepository
 import com.circapin.domain.repository.UserProfileRepository
+import com.circapin.domain.usecases.GoalCompletionUseCase
 import com.circapin.domain.usecases.RefreshTodayUseCase
+import com.circapin.notifications.ReminderScheduler
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.TimeZone
 
 /**
@@ -29,8 +34,12 @@ class TodayUpdater @Inject constructor(
     private val profiles: UserProfileRepository,
     private val models: ModelRepository,
     private val goals: GoalRepository,
+    private val plans: PlanRepository,
+    private val prefs: PreferencesRepository,
     private val sleepSync: SleepSync,
     private val refreshToday: RefreshTodayUseCase,
+    private val goalCompletion: GoalCompletionUseCase,
+    private val reminderScheduler: ReminderScheduler,
     private val timeZone: Provider<TimeZone>,
 ) {
     fun start(scope: CoroutineScope, tick: Duration = 15.minutes): Job {
@@ -43,7 +52,24 @@ class TodayUpdater @Inject constructor(
         val goalAndSync = combine(goals.observeActive(), sleepSync.lastAttempt, ticks) { goal, attempt, _ -> goal to attempt }
         return combine(sleep.observeRecords(), profiles.observeProfile(), models.observeState(), goalAndSync) {
                 records, profile, model, (goal, attempt) ->
-            if (profile != null) refreshToday(records, profile, model, goal, attempt, timeZone.get())
+            if (profile == null) return@combine
+            val tz = timeZone.get()
+
+            if (goal != null) {
+                val date = RefreshTodayUseCase.planDate(kotlin.time.Clock.System.now(), tz)
+                goalCompletion(goal, date)
+            }
+
+            refreshToday(records, profile, model, goal, attempt, tz)
+
+            val date = RefreshTodayUseCase.planDate(kotlin.time.Clock.System.now(), tz)
+            val plan = plans.getPlan(date)
+            if (plan != null) {
+                val reminderPrefs = prefs.observeReminderPreferences().first()
+                val wakeTime = plan.targetBedtime + profile.sleepNeedHours.toDouble().hours
+                val day = plans.observeDay(date).first()
+                reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, wakeTime)
+            }
         }.launchIn(scope)
     }
 }
