@@ -145,6 +145,19 @@ interface ScheduleGoalDao {
     @Query("SELECT * FROM schedule_goal WHERE status = :status ORDER BY createdAtMillis DESC")
     fun observeByStatus(status: GoalStatus): Flow<List<ScheduleGoalEntity>>
 
+    @Query("SELECT * FROM schedule_goal WHERE status = 'ACTIVE' ORDER BY createdAtMillis DESC, id DESC LIMIT 1")
+    fun observeActive(): Flow<ScheduleGoalEntity?>
+
+    @Query("UPDATE schedule_goal SET status = :to WHERE status = :from")
+    suspend fun updateStatus(from: GoalStatus, to: GoalStatus)
+
+    /** Abandons any active goal and inserts [goal] as the new active one, so only one is ever active. */
+    @Transaction
+    suspend fun replaceActive(goal: ScheduleGoalEntity): Long {
+        updateStatus(GoalStatus.ACTIVE, GoalStatus.ABANDONED)
+        return insert(goal.copy(id = 0, status = GoalStatus.ACTIVE))
+    }
+
     @Insert
     suspend fun insert(goal: ScheduleGoalEntity): Long
 
@@ -160,11 +173,28 @@ interface DailyPlanDao {
     @Query("SELECT * FROM daily_plan WHERE date = :date")
     fun observe(date: LocalDate): Flow<DailyPlanEntity?>
 
+    @Query("SELECT * FROM daily_plan WHERE date = :date")
+    suspend fun get(date: LocalDate): DailyPlanEntity?
+
     @Query("SELECT * FROM daily_plan WHERE goalId = :goalId ORDER BY date")
     suspend fun getForGoal(goalId: Long): List<DailyPlanEntity>
 
     @Upsert
     suspend fun upsert(plan: DailyPlanEntity)
+
+    @Upsert
+    suspend fun upsertForecast(forecast: EnergyForecastEntity)
+
+    @Upsert
+    suspend fun upsertEatingWindow(window: EatingWindowEntity)
+
+    /** Stores a day's plan with its forecast and eating window, so the home screen never sees half a day. */
+    @Transaction
+    suspend fun saveDay(plan: DailyPlanEntity, eatingWindow: EatingWindowEntity, forecast: EnergyForecastEntity) {
+        upsert(plan)
+        upsertEatingWindow(eatingWindow)
+        upsertForecast(forecast)
+    }
 
     @Delete
     suspend fun delete(plan: DailyPlanEntity)
@@ -216,6 +246,9 @@ interface SleepScoreDao {
 
     @Query("SELECT * FROM sleep_score WHERE date = :date")
     suspend fun get(date: LocalDate): SleepScoreEntity?
+
+    @Query("SELECT * FROM sleep_score WHERE date = :date")
+    fun observe(date: LocalDate): Flow<SleepScoreEntity?>
 
     @Upsert
     suspend fun upsert(score: SleepScoreEntity)

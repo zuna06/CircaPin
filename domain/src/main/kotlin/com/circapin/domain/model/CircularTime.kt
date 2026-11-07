@@ -6,8 +6,11 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.time.Instant
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toInstant
 import kotlinx.datetime.toLocalDateTime
 
 /**
@@ -45,6 +48,18 @@ internal object CircularTime {
     }
 
     fun minuteOfDay(time: LocalTime): Double = time.hour * 60.0 + time.minute
+
+    /** Minutes from the midnight that starts the evening's date, so 11 PM is 1380 and 1 AM is 1500. */
+    fun eveningMinutes(time: LocalTime): Double = minuteOfDay(time).let { if (it < HALF_DAY) it + MINUTES_PER_DAY else it }
+
+    /** The instant [eveningMinutes] after the midnight that starts [date], in local time, so DST is respected. */
+    fun onEvening(date: LocalDate, eveningMinutes: Double, timeZone: TimeZone): Instant {
+        val minutes = eveningMinutes.roundToInt()
+        val dayOffset = Math.floorDiv(minutes, MINUTES_PER_DAY)
+        val minuteOfDay = Math.floorMod(minutes, MINUTES_PER_DAY)
+        val day = LocalDate.fromEpochDays(date.toEpochDays() + dayOffset)
+        return LocalDateTime(day, LocalTime(minuteOfDay / 60, minuteOfDay % 60)).toInstant(timeZone)
+    }
 
     fun toLocalTime(minutes: Double): LocalTime {
         val rounded = normalize(minutes).roundToInt() % MINUTES_PER_DAY

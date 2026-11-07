@@ -15,18 +15,21 @@ import kotlinx.datetime.TimeZone
 
 /**
  * Recomputes the circadian model whenever sleep records or the profile change: syncs, manual entries,
- * deletions, and replaced records all pass through here. It also runs once on start, which refreshes
- * the estimate for a new day.
+ * deletions, and replaced records all pass through here. It also runs after every sync attempt, even one that
+ * changed nothing, so today's plan knows the estimate reflects the latest sync.
  */
 @Singleton
 class ModelUpdater @Inject constructor(
     private val sleep: SleepRepository,
     private val profiles: UserProfileRepository,
+    private val sleepSync: SleepSync,
     private val updateModel: UpdateModelUseCase,
     private val timeZone: Provider<TimeZone>,
 ) {
     fun start(scope: CoroutineScope): Job =
-        combine(sleep.observeRecords(), profiles.observeProfile()) { records, profile -> records to profile }
+        combine(sleep.observeRecords(), profiles.observeProfile(), sleepSync.lastAttempt) { records, profile, _ ->
+            records to profile
+        }
             .onEach { (records, profile) ->
                 if (profile != null) updateModel(records, profile, timeZone.get())
             }

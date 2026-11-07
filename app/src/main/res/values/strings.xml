@@ -83,6 +83,86 @@
     <string name="sleep_source_manual">Manual</string>
     <string name="sleep_quality">%1$d%% asleep</string>
 
+    <!-- Shared -->
+    <string name="duration_hours_minutes">%1$d h %2$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_minutes">%1$d min</string>
+    <plurals name="nights">
+        <item quantity="one">%d night</item>
+        <item quantity="other">%d nights</item>
+    </plurals>
+
+    <!-- Navigation -->
+    <string name="nav_today">Today</string>
+    <string name="nav_sleep_log">Sleep log</string>
+
+    <!-- Goal setup -->
+    <string name="goal_title">Your goal</string>
+    <string name="goal_intro">When do you need to be up, and from what date?</string>
+    <string name="goal_wake_label">Wake up at</string>
+    <string name="goal_date_label">Starting on</string>
+    <string name="goal_reason_label">What\'s it for? (optional)</string>
+    <string name="goal_reason_internship">Internship</string>
+    <string name="goal_reason_finals">Finals</string>
+    <string name="goal_reason_class_schedule">Class schedule</string>
+    <string name="goal_reason_travel">Travel</string>
+    <string name="goal_reason_other">Other</string>
+    <string name="goal_date_too_early">Choose a date after today.</string>
+    <string name="goal_preview_earlier">That means moving your body clock about %1$s earlier, around %2$d min a night over %3$s.</string>
+    <string name="goal_preview_later">That means moving your body clock about %1$s later, around %2$d min a night over %3$s.</string>
+    <string name="goal_preview_on_target">Your body clock already fits this goal.</string>
+    <string name="goal_preview_short">At a safe pace you\'d still be about %1$s short on that date. A later date would get you all the way.</string>
+    <string name="action_save_goal">Save goal</string>
+
+    <!-- Home -->
+    <string name="home_no_goal_title">Set a goal</string>
+    <string name="home_no_goal_body">Tell CircaPin when you need to be up, and it will plan each day to move your body clock there.</string>
+    <string name="home_goal">Up at %1$s by %2$s</string>
+    <string name="home_nights_left">%1$s left</string>
+    <string name="home_goal_date_reached">Goal date reached</string>
+    <string name="action_change_goal">Change goal</string>
+    <string name="home_shortfall">At a safe pace you\'ll still be about %1$s off on %2$s. A later date would get you all the way.</string>
+    <string name="home_shortfall_after">Your goal date has arrived and you\'re still about %1$s off. The plan keeps closing the gap at a safe pace.</string>
+    <string name="body_clock_behind">Your body clock is %1$s behind your goal.</string>
+    <string name="body_clock_ahead">Your body clock is %1$s ahead of your goal.</string>
+    <string name="body_clock_on_schedule">Your body clock is on schedule.</string>
+    <string name="body_clock_now">Right now your body thinks it\'s %1$s.</string>
+
+    <!-- Sleep score -->
+    <string name="score_title">Last night</string>
+    <string name="score_great">Great</string>
+    <string name="score_good">Good</string>
+    <string name="score_fair">Fair</string>
+    <string name="score_poor">Poor</string>
+    <string name="score_on_track">%1$s night</string>
+    <string name="score_with_note">%1$s, but %2$s</string>
+    <string name="score_note_short">you slept %1$s less than you need</string>
+    <string name="score_note_late">you went to bed %1$s late</string>
+    <string name="score_note_early">you went to bed %1$s early</string>
+    <string name="score_note_broken">your sleep was broken up</string>
+    <string name="score_note_irregular">your bedtime was %1$s off your usual</string>
+    <string name="score_description">Sleep score %1$d out of 100. %2$s</string>
+
+    <!-- Plan -->
+    <string name="plan_title">Today\'s plan</string>
+    <string name="plan_preparing">Preparing today\'s plan</string>
+    <string name="plan_bright_light">Seek bright light</string>
+    <string name="plan_avoid_light">Avoid bright light</string>
+    <string name="plan_caffeine">Last caffeine</string>
+    <string name="plan_by">By %1$s</string>
+    <string name="plan_nap">Nap</string>
+    <string name="plan_nap_value">%1$s, up to %2$d min</string>
+    <string name="plan_meals">Meals</string>
+    <string name="plan_bedtime">Bedtime</string>
+
+    <!-- Energy forecast -->
+    <string name="forecast_title">Energy forecast</string>
+    <string name="forecast_summary">Most alert around %1$s, least alert around %2$s.</string>
+    <string name="forecast_note">Each hour shows how alert you\'d be if you were awake then.</string>
+    <string name="forecast_show_values">Show hourly values</string>
+    <string name="forecast_hide_values">Hide hourly values</string>
+    <string name="forecast_hour_value">%1$s: %2$d%%</string>
+
     <!-- Body clock -->
     <string name="body_clock_title">Body clock estimate</string>
     <string name="body_clock_dlmo">Melatonin onset around %1$s</string>

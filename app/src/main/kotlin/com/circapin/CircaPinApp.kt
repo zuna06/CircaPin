@@ -12,10 +12,14 @@ class CircaPinApp : Application() {
     @Inject
     lateinit var modelUpdater: ModelUpdater
 
+    @Inject
+    lateinit var todayUpdater: TodayUpdater
+
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     override fun onCreate() {
         super.onCreate()
         modelUpdater.start(appScope)
+        todayUpdater.start(appScope)
     }
 }

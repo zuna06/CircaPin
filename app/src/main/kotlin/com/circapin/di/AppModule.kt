@@ -4,14 +4,19 @@ import android.content.Context
 import com.circapin.data.healthconnect.HealthConnectSleepSource
 import com.circapin.data.healthconnect.SleepSessionSource
 import com.circapin.data.local.CircaPinDatabase
+import com.circapin.data.repository.GoalRepositoryImpl
 import com.circapin.data.repository.ModelRepositoryImpl
+import com.circapin.data.repository.PlanRepositoryImpl
 import com.circapin.data.repository.SleepRepositoryImpl
 import com.circapin.data.repository.UserProfileRepositoryImpl
+import com.circapin.domain.repository.GoalRepository
 import com.circapin.domain.repository.ModelRepository
+import com.circapin.domain.repository.PlanRepository
 import com.circapin.domain.repository.SleepRepository
 import com.circapin.domain.repository.UserProfileRepository
 import com.circapin.domain.usecases.CompleteOnboardingUseCase
 import com.circapin.domain.usecases.LogSleepUseCase
+import com.circapin.domain.usecases.RefreshTodayUseCase
 import com.circapin.domain.usecases.UpdateModelUseCase
 import dagger.Module
 import dagger.Provides
@@ -64,4 +69,20 @@ object AppModule {
 
     @Provides
     fun completeOnboardingUseCase(profiles: UserProfileRepository) = CompleteOnboardingUseCase(profiles)
+
+    @Provides
+    @Singleton
+    fun goalRepository(database: CircaPinDatabase): GoalRepository = GoalRepositoryImpl(database.scheduleGoalDao())
+
+    @Provides
+    @Singleton
+    fun planRepository(database: CircaPinDatabase): PlanRepository = PlanRepositoryImpl(
+        plans = database.dailyPlanDao(),
+        forecasts = database.energyForecastDao(),
+        eatingWindows = database.eatingWindowDao(),
+        scores = database.sleepScoreDao(),
+    )
+
+    @Provides
+    fun refreshTodayUseCase(plans: PlanRepository, clock: Clock) = RefreshTodayUseCase(plans, clock)
 }

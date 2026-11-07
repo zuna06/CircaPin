@@ -39,9 +39,21 @@ class ModelUpdaterTest {
     private val sleep = FakeSleepRepository()
     private val profiles = FakeProfiles()
     private val models = FakeModelRepository()
-    private val updater = ModelUpdater(sleep, profiles, UpdateModelUseCase(models, clock)) { TimeZone.UTC }
+    private val sleepSync = SleepSync(sleep, clock)
+    private val updater = ModelUpdater(sleep, profiles, sleepSync, UpdateModelUseCase(models, clock)) { TimeZone.UTC }
 
     private fun TestScope.started() = updater.start(backgroundScope)
+
+    @Test
+    fun `a sync that changes nothing still reruns the model`() = runTest(UnconfinedTestDispatcher()) {
+        started()
+        profiles.profile.value = UserProfile(chronotypeScore = 14, onboardingComplete = true)
+        sleep.syncResult = com.circapin.domain.repository.SleepSyncResult.NotConnected
+
+        sleepSync.sync()
+
+        assertEquals(2, models.saved.size)
+    }
 
     @Test
     fun `nothing is computed before onboarding`() = runTest(UnconfinedTestDispatcher()) {

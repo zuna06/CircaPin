@@ -1,6 +1,5 @@
 package com.circapin.ui.sleeplog
 
-import android.text.format.DateFormat
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -8,20 +7,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TimePicker
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDatePickerState
-import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -29,7 +22,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
@@ -39,16 +31,11 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.circapin.R
 import com.circapin.domain.usecases.SleepEntryProblem
-import java.time.format.DateTimeFormatter
-import java.time.format.FormatStyle
-import kotlin.time.Instant
+import com.circapin.ui.components.DatePickerPopup
+import com.circapin.ui.components.TimePickerPopup
+import com.circapin.ui.components.formatted
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.atStartOfDayIn
-import kotlinx.datetime.toJavaLocalDate
-import kotlinx.datetime.toJavaLocalTime
-import kotlinx.datetime.toLocalDateTime
 
 @Composable
 fun SleepEntryRoute(onDone: () -> Unit, viewModel: SleepEntryViewModel = hiltViewModel()) {
@@ -129,10 +116,10 @@ private fun DateTimeField(
         Text(label, style = MaterialTheme.typography.titleMedium)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             OutlinedButton(onClick = { pickingDate = true }, modifier = Modifier.weight(1f)) {
-                Text(date.toJavaLocalDate().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)))
+                Text(date.formatted())
             }
             OutlinedButton(onClick = { pickingTime = true }, modifier = Modifier.weight(1f)) {
-                Text(time.toJavaLocalTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)))
+                Text(time.formatted())
             }
         }
     }
@@ -143,64 +130,6 @@ private fun DateTimeField(
     if (pickingTime) {
         TimePickerPopup(label, time, onDismiss = { pickingTime = false }, onConfirm = onTime)
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun DatePickerPopup(date: LocalDate, onDismiss: () -> Unit, onConfirm: (LocalDate) -> Unit) {
-    // The picker works in UTC milliseconds regardless of the device's time zone.
-    val pickerState = rememberDatePickerState(
-        initialSelectedDateMillis = date.atStartOfDayIn(TimeZone.UTC).toEpochMilliseconds(),
-    )
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    pickerState.selectedDateMillis?.let { millis ->
-                        onConfirm(Instant.fromEpochMilliseconds(millis).toLocalDateTime(TimeZone.UTC).date)
-                    }
-                    onDismiss()
-                },
-            ) { Text(stringResource(R.string.action_ok)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    ) {
-        DatePicker(state = pickerState)
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun TimePickerPopup(
-    title: String,
-    time: LocalTime,
-    onDismiss: () -> Unit,
-    onConfirm: (LocalTime) -> Unit,
-) {
-    val pickerState = rememberTimePickerState(
-        initialHour = time.hour,
-        initialMinute = time.minute,
-        is24Hour = DateFormat.is24HourFormat(LocalContext.current),
-    )
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = { TimePicker(state = pickerState) },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onConfirm(LocalTime(pickerState.hour, pickerState.minute))
-                    onDismiss()
-                },
-            ) { Text(stringResource(R.string.action_ok)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_cancel)) }
-        },
-    )
 }
 
 private fun SleepEntryProblem.messageRes(isNap: Boolean): Int = when (this) {

@@ -1,6 +1,6 @@
 # Phase 2 Writeup: The Model
 
-Nov 7, 2026. Work is on the `phase-2` branch and not committed yet.
+Nov 7, 2026. Phase 2 is merged to `main`.
 
 ## Status
 
@@ -47,4 +47,4 @@ No new libraries. The Room schema is now version 2, upgraded by an auto-migratio
 | Free nights fixed as Friday and Saturday | Keep for the MVP. Revisit with the semester planner. |
 | Where the estimate is shown | Keep the sleep log card until the Phase 3 home screen replaces it. |
 
-**Next:** commit and merge `phase-2`, then start Phase 3 with goal setup, since plans depend on a goal.
+**Next:** start Phase 3 on its own branch, beginning with goal setup, since plans depend on a goal.
