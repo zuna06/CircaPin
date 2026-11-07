@@ -1,4 +1,94 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CircaPin</string>
+
+    <!-- Common -->
+    <string name="action_back">Back</string>
+    <string name="action_next">Next</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_ok">OK</string>
+    <string name="action_save">Save</string>
+
+    <!-- Onboarding: questionnaire -->
+    <string name="onboarding_progress">Question %1$d of %2$d</string>
+    <string name="question_preferred_wake_time">If your day were completely free, when would you choose to wake up?</string>
+    <string-array name="options_preferred_wake_time">
+        <item>Before 6:30 AM</item>
+        <item>6:30 to 7:45 AM</item>
+        <item>7:45 to 9:45 AM</item>
+        <item>9:45 to 11:00 AM</item>
+        <item>After 11:00 AM</item>
+    </string-array>
+    <string name="question_morning_alertness">How alert do you usually feel in the first half hour after waking?</string>
+    <string-array name="options_morning_alertness">
+        <item>Not alert at all</item>
+        <item>Slightly alert</item>
+        <item>Fairly alert</item>
+        <item>Very alert</item>
+    </string-array>
+    <string name="question_preferred_bedtime">With no commitments the next day, when would you start to feel ready for bed?</string>
+    <string-array name="options_preferred_bedtime">
+        <item>Before 9:00 PM</item>
+        <item>9:00 to 10:15 PM</item>
+        <item>10:15 PM to 12:45 AM</item>
+        <item>12:45 to 2:00 AM</item>
+        <item>After 2:00 AM</item>
+    </string-array>
+    <string name="question_peak_time_of_day">At what time of day do you usually feel at your best?</string>
+    <string-array name="options_peak_time_of_day">
+        <item>Early morning</item>
+        <item>Late morning</item>
+        <item>Afternoon</item>
+        <item>Evening</item>
+        <item>Late at night</item>
+    </string-array>
+    <string name="question_self_assessment">Which describes you best?</string>
+    <string-array name="options_self_assessment">
+        <item>Definitely a morning person</item>
+        <item>More morning than evening</item>
+        <item>More evening than morning</item>
+        <item>Definitely an evening person</item>
+    </string-array>
+
+    <!-- Onboarding: result and Health Connect -->
+    <string name="chronotype_definite_evening">You\'re a strong evening type</string>
+    <string name="chronotype_moderate_evening">You lean toward evenings</string>
+    <string name="chronotype_intermediate">You\'re somewhere in the middle</string>
+    <string name="chronotype_moderate_morning">You lean toward mornings</string>
+    <string name="chronotype_definite_morning">You\'re a strong morning type</string>
+    <string name="onboarding_baseline">As a starting point, your body clock probably begins winding down around %1$s. CircaPin will refine this from your sleep data.</string>
+    <string name="health_connect_title">Connect your sleep data</string>
+    <string name="health_connect_rationale">CircaPin reads your sleep times to estimate your body clock. It never uploads this data.</string>
+    <string name="health_connect_unavailable">Health Connect isn\'t available on this device, so you\'ll log your sleep manually.</string>
+    <string name="action_connect_health_connect">Connect Health Connect</string>
+    <string name="action_log_manually">Log sleep manually instead</string>
+    <string name="action_continue">Continue</string>
+
+    <!-- Sleep log -->
+    <string name="sleep_log_title">Sleep log</string>
+    <string name="sleep_log_empty">No sleep logged yet.</string>
+    <string name="action_sync">Sync</string>
+    <string name="action_log_sleep">Log sleep</string>
+    <string name="action_log_nap">Log a nap</string>
+    <string name="action_connect">Connect</string>
+    <string name="sync_in_progress">Syncing with Health Connect</string>
+    <string name="sync_not_connected">Health Connect isn\'t connected. You can connect it or log sleep manually.</string>
+    <string name="sync_unavailable">Health Connect isn\'t available. You can still log sleep manually.</string>
+    <string name="sync_failed">Couldn\'t sync with Health Connect. Try again later.</string>
+    <string name="sleep_time_range">%1$s to %2$s</string>
+    <string name="sleep_duration">%1$d h %2$d min</string>
+    <string name="sleep_kind_night">Sleep</string>
+    <string name="sleep_kind_nap">Nap</string>
+    <string name="sleep_source_health_connect">Health Connect</string>
+    <string name="sleep_source_manual">Manual</string>
+    <string name="sleep_quality">%1$d%% asleep</string>
+
+    <!-- Sleep entry -->
+    <string name="sleep_entry_onset">Fell asleep</string>
+    <string name="sleep_entry_wake">Woke up</string>
+    <string name="sleep_entry_error_order">Wake time must be after the time you fell asleep.</string>
+    <string name="sleep_entry_error_future">This entry ends in the future.</string>
+    <string name="sleep_entry_error_too_long">This is longer than a single sleep. Check the dates.</string>
+    <string name="sleep_entry_error_too_long_nap">Naps can be up to 3 hours. Log longer sleep with Log sleep.</string>
+    <string name="sleep_entry_error_overlap">This overlaps sleep you\'ve already logged.</string>
 </resources>

@@ -1,56 +1,67 @@
 # Phase 1 Writeup: Foundation
 
-Nov 6, 2026.
+Nov 6, 2026. Work is on the `phase-1` branch.
 
 ## Status
 
-**Phase 1 is not complete.** Only the multi-module Gradle project with Hilt wiring is done (app-level only, no bindings yet). Room entities and DAOs, the HealthConnect wrapper, the chronotype questionnaire and manual sleep/nap logging are not started, so the deliverable (read sleep data, store it, show a raw sleep log) is not met.
+**All five Phase 1 items are built, and the deliverable works on an API 37 emulator:** the app reads sleep data from Health Connect and manual input, stores it locally, and shows a raw sleep log. **One check is left:** Health Connect reads on a real device, which should happen before merging to `main`.
 
 ## What was implemented and how
 
-- **Modules:** `app`, `domain`, `data` and `buildSrc`, with dependencies running `app → data → domain`. `data` exposes `domain` and the Room runtime through `api`, so `app/di` can provide the database.
-- **Packages:** every package in the outline's tree exists under `com.circapin`. Empty ones hold a `.gitkeep`.
-- **Build config:** the version catalog is `buildSrc/libs.versions.toml`, and SDK levels are in `AndroidConfig.kt`. JUnit Platform is on in all modules, and Room schemas export to `data/schemas`.
-- **App shell:** `CircaPinApp` and `MainActivity` show the app name in Compose through Hilt. `allowBackup` is `false`.
+- **Modules:** `app → data → domain`, plus `buildSrc`. `domain` is pure Kotlin, so `app/di/AppModule.kt` constructs its classes.
+- **Room:** 11 tables in `data/local`, mapped to `domain/entities`. Only `SleepRecord` and `UserProfile` have domain models so far; the rest get theirs in the phase that uses them.
+- **Health Connect:** `HealthConnectSleepSource` is read-only and pages through 30 days of sessions. Re-syncing updates records by their Health Connect ID, so nothing is duplicated. Quality is the share of a session not spent awake, or empty without stage data.
+- **Questionnaire:** five questions scored in `ChronotypeQuestionnaire`, giving a chronotype and a baseline DLMO from 8 PM to 1 AM. Onboarding saves the profile, then offers Health Connect or manual logging.
+- **Sleep log:** a list of all records, with sync on launch, a Sync button, and a form for sleep or naps. Entries are rejected if they're in the wrong order, end in the future, run too long, or overlap a record.
 
 ## Tech stack and dependencies
 
-| Area | Declared this phase (most not used by code yet) |
+| Area | Used in this phase |
 |---|---|
-| Toolchain | Gradle 9.8.1 (wrapper), AGP 9.5.1, Kotlin 2.4.21, KSP 2.3.13, JDK 21 to build, Java 17 target |
+| Toolchain | Gradle 9.8.1, AGP 9.5.1, Kotlin 2.4.21, KSP 2.3.13, JDK 21 to build, Java 17 target |
 | Android | minSdk 28, compile and target SDK 37 |
-| `domain`, `data` | `kotlinx-datetime` 0.8.0, `kotlinx-coroutines-core` 1.11.0, Room 2.8.5, Health Connect client 1.1.0 |
-| `app` UI | Compose BOM 2026.09.00, Material 3, Activity 1.13.0, Core 1.19.1, Lifecycle 2.11.0, Navigation 2.10.2, Vico 3.3.1 |
-| `app` DI, background | Hilt 2.60.1, AndroidX Hilt 1.4.0, WorkManager 2.12.0 |
-| Testing | JUnit 5.14.4, Turbine 1.2.1, coroutines-test 1.11.0, Compose UI test, AndroidX Test, Room testing |
+| `domain` | `kotlinx-datetime` 0.8.0, `kotlinx-coroutines-core` 1.11.0 |
+| `data` | Room 2.8.5, Health Connect client 1.1.0 |
+| `app` | Compose BOM 2026.09.00, Material 3, Navigation 2.10.2, Lifecycle 2.11.0, Hilt 2.60.1, AndroidX Hilt 1.4.0 |
+| Testing | JUnit 5.14.4, Turbine 1.2.1, coroutines-test 1.11.0, Compose UI test, Espresso 3.7.0, AndroidX Test |
+
+Vico and WorkManager are declared but not used yet.
 
 ## Verification
 
-- **Passed:** `assembleDebug`, `assembleDebugAndroidTest` and `test`, with no warnings on a clean compile. `domain` resolves only `kotlin-stdlib`, `kotlinx-datetime` and `kotlinx-coroutines-core`, and the merged manifest has no `INTERNET` permission.
-- **Ran on an emulator (API 37):** the shell launches through Hilt with no crashes, in 2.5-2.8 s cold (debug build).
-- **Not verified:** a real device or any API below 37, including minSdk 28. No tests exist, so `test` shows only that the setup works.
+- **Automated:** 70 tests pass from a clean build with no warnings: 31 on the JVM and 39 on the emulator. The emulator tests cover all 11 tables and a real Health Connect write and read, including 1,100 sessions across pages.
+- **By hand on the emulator:** the questionnaire, the real permission screen, sync, manual logging, the overlap error, relaunch without onboarding, and the disconnected banner, all with no crashes.
+- **Not verified:** a real device, any API below 37 (including minSdk 28), and stage data from a real wearable.
 
 ## Issues and things to consider
 
-- **Social jetlag example is wrong:** midnight-8 AM vs 3 AM-11 AM is listed as about 1.5 hours, but the midpoints (4 AM, 7 AM) are 3 hours apart. Fix this before it becomes a Phase 2 test fixture.
-- **Min SDK rationale is wrong:** the Health Connect client's minimum is API 26, so API 28 is a choice, not a requirement.
-- **Missing permissions:** the daily WorkManager sync should need `READ_HEALTH_DATA_IN_BACKGROUND` per the Health Connect docs (untested). `POST_NOTIFICATIONS` is also unlisted, and exact alarms need a fallback because users can deny them.
-- **Permissions added by libraries:** WorkManager adds four, including `FOREGROUND_SERVICE`, against "only the permissions it needs". Review before release, but keep `RECEIVE_BOOT_COMPLETED` so alarms survive a reboot.
-- **Health Connect setup:** per the docs, it's a separate app install on Android 13 and below, and the permission flow needs a rationale screen declared in the manifest.
-- **Theme, icon and insets:** the tree has no `ui/theme/` package, and there's no launcher icon. The shell handles edge-to-edge insets, and every new screen must too.
+**Likely to affect Phase 2**
 
-## Decisions made
+- **Double counting:** the overlap check only covers manual entries. A manual night that a wearable later syncs is stored twice, which would inflate sleep debt.
+- **Nap detection:** Health Connect has no nap flag, so any session up to 3 hours is a nap, including a very short night.
+- **Chronotype numbers are provisional:** the score bands and DLMO range are my estimates, and the wording is original rather than the published MEQ. Validate them in Phase 2.
 
-All seven are settled. Only the coroutines change is applied so far, and the outline PDF still needs updating to match.
+**Deferred or missing**
 
-| Topic | Outcome |
+- **Background sync (FR-2):** sync only runs on launch and on Sync. A worker should also need `READ_HEALTH_DATA_IN_BACKGROUND` (untested for the app).
+- **Goal setup (FR-1):** it isn't a Phase 1 task, so `UserProfile` target fields stay empty.
+- **Deletion:** there's no delete in the UI yet. A deleted Health Connect record will return on the next sync, and sessions deleted at the source stay in the log.
+- **Theme and icon:** there's no `ui/theme/` package or launcher icon yet.
+
+**Outline corrections still needed**
+
+- **Social jetlag example:** midnight-8 AM vs 3 AM-11 AM is 3 hours, not 1.5. Fix it before it becomes a Phase 2 fixture.
+- **Min SDK:** the Health Connect client's minimum is API 26, so API 28 is a choice.
+- **Permissions:** `POST_NOTIFICATIONS` is unlisted, exact alarms need a fallback, and WorkManager adds four permissions, including `FOREGROUND_SERVICE`.
+
+## Decisions
+
+**Applied:** all seven earlier decisions, except that the outline still needs FR-11 and FR-12 added to Phase 3. **Added beyond the outline:** `SleepRecord.externalId` for de-duplication, and `ScheduleGoal.createdAtMillis` to find a goal's starting phase.
+
+| Still open | Recommendation |
 |---|---|
-| Room entities | They live in `data/local`, mapped to `domain/entities`, so `domain` stays free of Room. |
-| Plans and goals | `DailyPlan` gets a `goalId` foreign key. |
-| Phase history | Add a model snapshot table. `ModelState` stays as the current value. |
-| Meal times | Only in `EatingWindow`, which has the manual override. Removed from `DailyPlan`. |
-| Coroutines in `domain` | Allowed, and exposed through `api`. This changes the outline's "stdlib and kotlinx-datetime only" rule. |
-| FR-11 and FR-12 | Both go in Phase 3, with the daily plan. |
-| Package name | `com.circapin` is final. |
+| Handling a synced session that overlaps a manual one | Keep the Health Connect record and drop the manual one during sync. |
+| Target wake time and date are in both `UserProfile` and `ScheduleGoal` | Keep them only in `ScheduleGoal`. |
+| Where deleted Health Connect records are remembered | Keep a tombstone so sync skips them. Needed by Phase 5. |
 
-**Suggested order:** build Room and manual logging, the HealthConnect wrapper (real device), and the questionnaire.
+**Next:** run the app on a real device with a wearable, then merge `phase-1` and start Phase 2.

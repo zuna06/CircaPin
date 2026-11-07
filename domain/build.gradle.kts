@@ -21,10 +21,11 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
-    // Exposed because repository interfaces use Flow in their signatures.
+    // Exposed because public signatures use Flow, LocalDate and LocalTime.
     api(libs.kotlinx.coroutines.core)
-    implementation(libs.kotlinx.datetime)
+    api(libs.kotlinx.datetime)
 
     testImplementation(libs.junit.jupiter)
+    testImplementation(libs.kotlinx.coroutines.test)
     testRuntimeOnly(libs.junit.platform.launcher)
 }
