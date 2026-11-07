@@ -76,6 +76,15 @@ class RepositoryTest {
     )
 
     @Test
+    fun sourceDeletionRemovesOnlySyncedRecordsInTheReadWindow() = runTest {
+        source.sessions = listOf(synced("removed"))
+        repository.syncFromHealthConnect()
+        source.sessions = emptyList()
+        repository.syncFromHealthConnect()
+        assertTrue(repository.observeRecords().first().isEmpty())
+    }
+
+    @Test
     fun syncStoresSessionsAndCanBeRepeated() = runTest {
         source.sessions = listOf(synced("a"), synced("b", hoursAgo = 36))
 

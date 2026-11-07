@@ -41,11 +41,15 @@ class RefreshTodayUseCase(
         val date = planDate(clock.now(), timeZone)
         val lastNightPlan = plans.getPlan(LocalDate.fromEpochDays(date.toEpochDays() - 1))
         val score = computeScore(records, date, lastNightPlan, profile.sleepNeedHours, timeZone)
-        score?.let { plans.saveScore(it) }
+        if (score == null) plans.deleteScore(date) else plans.saveScore(score)
 
         if (model == null || goal == null) return
         val existing = plans.getPlan(date)
-        if (existing != null && existing.goalId == goal.id) return
+        if (existing != null && existing.goalId == goal.id) {
+            // Action times stay fixed, but the forecast reflects late sleep and feedback.
+            plans.saveForecast(computeForecast(existing, model, records, profile.sleepNeedHours, timeZone))
+            return
+        }
         // A plan is kept all day, so don't build it from yesterday's estimate or from data that predates a sync.
         if (model.lastUpdated < LocalDateTime(date, LocalTime(DAY_START_HOUR, 0)).toInstant(timeZone)) return
         if (lastSyncAttempt == null || model.lastUpdated < lastSyncAttempt) return
@@ -58,8 +62,9 @@ class RefreshTodayUseCase(
     companion object {
         /** A plan day starts at 4 AM, so someone still up at 1 AM sees the plan they're living in. */
         private const val DAY_START_HOUR = 4
-        private val DAY_START = DAY_START_HOUR.hours
-
-        fun planDate(now: Instant, timeZone: TimeZone): LocalDate = (now - DAY_START).toLocalDateTime(timeZone).date
+        fun planDate(now: Instant, timeZone: TimeZone): LocalDate {
+            val local = now.toLocalDateTime(timeZone)
+            return if (local.hour < DAY_START_HOUR) LocalDate.fromEpochDays(local.date.toEpochDays() - 1) else local.date
+        }
     }
 }

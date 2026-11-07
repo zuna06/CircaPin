@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -56,6 +58,8 @@ fun CheckInScreen(state: CheckInUiState, onSubmit: (Int) -> Unit, onDone: () -> 
 
             if (state.alreadyCheckedIn) {
                 CheckedInCard(state)
+            } else if (!state.available) {
+                Text(stringResource(R.string.checkin_unavailable))
             } else {
                 Text(
                     text = stringResource(R.string.checkin_question),
@@ -66,7 +70,8 @@ fun CheckInScreen(state: CheckInUiState, onSubmit: (Int) -> Unit, onDone: () -> 
                     alertnessLabels.forEachIndexed { index, labelRes ->
                         FilledTonalButton(
                             onClick = { onSubmit(index + 1) },
-                            modifier = Modifier.fillMaxWidth(),
+                            enabled = !state.submitting,
+                            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp),
                         ) {
                             Row(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -79,6 +84,8 @@ fun CheckInScreen(state: CheckInUiState, onSubmit: (Int) -> Unit, onDone: () -> 
                     }
                 }
             }
+            if (state.error) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = onDone) { Text(stringResource(R.string.action_back)) }
         }
     }
 }

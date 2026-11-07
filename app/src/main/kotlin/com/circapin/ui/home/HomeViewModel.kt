@@ -1,5 +1,7 @@
 package com.circapin.ui.home
 
+import com.circapin.planDays
+import kotlinx.coroutines.flow.flatMapLatest
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.circapin.domain.entities.CheckIn
@@ -40,8 +42,10 @@ data class HomeUiState(
     val score: SleepScore? = null,
     val todayCheckIn: CheckIn? = null,
     val goalStatus: GoalStatus? = null,
+    val sleepNeedHours: Float = 8f,
 )
 
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     goals: GoalRepository,
@@ -52,10 +56,7 @@ class HomeViewModel @Inject constructor(
     clock: Clock,
     timeZoneProvider: Provider<TimeZone>,
 ) : ViewModel() {
-    private val timeZone = timeZoneProvider.get()
-    private val date = RefreshTodayUseCase.planDate(clock.now(), timeZone)
-
-    val state: StateFlow<HomeUiState> = combine(
+    val state: StateFlow<HomeUiState> = planDays(clock, timeZoneProvider).flatMapLatest { (date, timeZone) -> combine(
         goals.observeActive(),
         models.observeState(),
         plans.observeDay(date),
@@ -76,8 +77,9 @@ class HomeViewModel @Inject constructor(
             score = score,
             todayCheckIn = checkIn,
             goalStatus = goal?.status,
+            sleepNeedHours = profile?.sleepNeedHours ?: 8f,
         )
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HomeUiState())
+    } }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), HomeUiState())
 
     private companion object {
         const val STOP_TIMEOUT_MILLIS = 5_000L

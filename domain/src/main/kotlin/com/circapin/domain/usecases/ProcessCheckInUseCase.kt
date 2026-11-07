@@ -9,6 +9,9 @@ import kotlin.math.abs
 import kotlin.math.sign
 import kotlin.time.Duration.Companion.minutes
 import kotlinx.datetime.LocalDate
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Records a morning check-in and, when two consecutive mismatches point the same way, nudges the DLMO.
@@ -20,19 +23,23 @@ class ProcessCheckInUseCase(
     private val checkIns: CheckInRepository,
     private val models: ModelRepository,
 ) {
+    private val mutex = Mutex()
     suspend operator fun invoke(
         alertness: Int,
         date: LocalDate,
         forecast: EnergyForecast,
         model: ModelState,
         wakeHour: Int,
-    ): CheckIn {
+    ): CheckIn = mutex.withLock {
+        require(alertness in 1..5)
+        checkIns.get(date)?.let { return@withLock it }
         val predicted = forecast.hourlyAlertness.getOrElse(wakeHour.coerceIn(0, 23)) { 0.5f }
         val reported = (alertness - 1) / 4f
         val delta = reported - predicted
 
         val yesterday = checkIns.get(LocalDate.fromEpochDays(date.toEpochDays() - 1))
-        val correction = correction(delta, yesterday)
+        val previous = checkIns.observeAll().first().sumOf { it.appliedCorrectionMinutes }
+        val correction = (previous + correction(delta, yesterday)).coerceIn(-180, 180) - previous
 
         val checkIn = CheckIn(
             date = date,
@@ -49,7 +56,7 @@ class ProcessCheckInUseCase(
             )
             models.save(adjusted)
         }
-        return checkIn
+        checkIn
     }
 
     companion object {
@@ -64,7 +71,7 @@ class ProcessCheckInUseCase(
             if (abs(yesterdayDelta) < MISMATCH_THRESHOLD) return 0
             if (todayDelta.sign != yesterdayDelta.sign) return 0
 
-            val points = abs((todayDelta * 4).toInt())
+            val points = abs(todayDelta * 4)
             val magnitude = if (points >= 2) LARGE_CORRECTION_MINUTES else SMALL_CORRECTION_MINUTES
             return if (todayDelta < 0) magnitude else -magnitude
         }

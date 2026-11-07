@@ -53,15 +53,14 @@ fun PlanCard(plan: DailyPlan, eatingWindow: EatingWindow?, modifier: Modifier = 
 @Composable
 private fun PlanRow(label: String, value: String, emphasised: Boolean = false) {
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .semantics(mergeDescendants = true) {},
     ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth())
         Text(
             text = value,
             style = MaterialTheme.typography.bodyLarge,

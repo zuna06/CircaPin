@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.datetime.TimeZone
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Recomputes the circadian model whenever sleep records or the profile change: syncs, manual entries,
@@ -31,7 +32,7 @@ class ModelUpdater @Inject constructor(
             records to profile
         }
             .onEach { (records, profile) ->
-                if (profile != null) updateModel(records, profile, timeZone.get())
+                DataGuard.mutex.withLock { if (profile != null) updateModel(records, profile, timeZone.get()) }
             }
             .launchIn(scope)
 }

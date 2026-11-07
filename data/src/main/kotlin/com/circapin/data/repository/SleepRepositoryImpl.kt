@@ -49,7 +49,7 @@ class SleepRepositoryImpl(
                     val records = source.readSessions(from, now)
                     val superseded = dao.getManualOverlapping(from.toEpochMilliseconds(), now.toEpochMilliseconds())
                         .filter { it.toDomain().isSupersededBy(records) }
-                    dao.saveSynced(records.map { it.toEntity() }, superseded.map { it.id })
+                    dao.reconcileSynced(records.map { it.toEntity() }, superseded.map { it.id }, from.toEpochMilliseconds(), now.toEpochMilliseconds())
                     SleepSyncResult.Synced(records.size)
                 }
             }

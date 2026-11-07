@@ -17,7 +17,17 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.animation.animateContentSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import com.circapin.screentime.ScreenTimeTracker
+import androidx.lifecycle.ViewModel
+import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Duration.Companion.hours
+import kotlinx.coroutines.delay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -53,20 +63,27 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.datetime.LocalTime
 
+@HiltViewModel
+class ScreenTimeViewModel @Inject constructor(val tracker: ScreenTimeTracker) : ViewModel()
+
 @Composable
 fun HomeRoute(
     onEditGoal: () -> Unit,
     onProgress: () -> Unit = {},
     onCheckIn: () -> Unit = {},
     viewModel: HomeViewModel = hiltViewModel(),
+    screenTimeViewModel: ScreenTimeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    HomeScreen(state = state, now = Clock.System.now(), onEditGoal = onEditGoal, onProgress = onProgress, onCheckIn = onCheckIn)
+    val screen by screenTimeViewModel.tracker.snapshot.collectAsStateWithLifecycle()
+    var now by androidx.compose.runtime.remember { mutableStateOf(Clock.System.now()) }
+    LaunchedEffect(Unit) { while (true) { now = Clock.System.now(); delay(60_000) } }
+    HomeScreen(state = state, now = now, screenMinutes = screen?.totalMinutes, afterDimming = screen?.afterDimmingMinutes, onEditGoal = onEditGoal, onProgress = onProgress, onCheckIn = onCheckIn)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgress: () -> Unit = {}, onCheckIn: () -> Unit = {}) {
+fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgress: () -> Unit = {}, onCheckIn: () -> Unit = {}, screenMinutes: Int? = null, afterDimming: Int? = null) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_today)) }) }) { padding ->
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -77,7 +94,7 @@ fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgr
         ) {
             if (state.loading) return@Column
 
-            if (state.todayCheckIn == null && state.model != null) {
+            if (state.todayCheckIn == null && state.model != null && state.day?.forecast != null && now.toLocalDateTime(TimeZone.currentSystemDefault()).hour in 4..11) {
                 CheckInPromptCard(onCheckIn)
             }
 
@@ -90,7 +107,7 @@ fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgr
 
             if (goal == null) {
                 NoGoalCard(onEditGoal)
-            } else if (state.goalStatus == GoalStatus.ACTIVE) {
+            } else if ((state.goalStatus ?: goal.status) == GoalStatus.ACTIVE) {
                 GoalCard(goal, state.progress, onEditGoal, onProgress)
             }
             state.progress?.let { ShortfallCard(it, goal) }
@@ -101,7 +118,13 @@ fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgr
                 day != null -> PlanCard(day.plan, day.eatingWindow)
                 goal != null -> Text(stringResource(R.string.plan_preparing))
             }
-            day?.forecast?.let { ForecastCard(it) }
+            day?.forecast?.let { forecast ->
+                val onset = state.model?.estimatedDlmo?.plus(2.hours)?.toLocalDateTime(TimeZone.currentSystemDefault())?.hour
+                val sleepHours = onset?.let { start -> (0 until kotlin.math.ceil(state.sleepNeedHours.toDouble()).toInt()).map { (start + it) % 24 }.toSet() }.orEmpty()
+                ForecastCard(forecast, sleepHours)
+            }
+            screenMinutes?.let { Text(stringResource(R.string.screen_time_summary, it, afterDimming ?: 0)) }
+            if (state.goalStatus != GoalStatus.ACTIVE && state.goal != null) TextButton(onClick = onProgress) { Text(stringResource(R.string.progress_title)) }
         }
     }
 }
@@ -125,9 +148,9 @@ private fun NoGoalCard(onEditGoal: () -> Unit) {
 private fun GoalCard(goal: ScheduleGoal, progress: GoalProgress?, onEditGoal: () -> Unit, onProgress: () -> Unit) {
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(modifier = Modifier
-                    .weight(1f)
+                    .fillMaxWidth()
                     .semantics(mergeDescendants = true) {}) {
                     Text(
                         text = stringResource(R.string.home_goal, goal.targetWakeTime.formatted(), goal.targetDate.formatted()),
@@ -300,7 +323,7 @@ private fun ScoreCard(score: SleepScore) {
 }
 
 @Composable
-private fun ForecastCard(forecast: EnergyForecast) {
+private fun ForecastCard(forecast: EnergyForecast, sleepHours: Set<Int>) {
     var showValues by rememberSaveable { mutableStateOf(false) }
     val hours = forecast.hourlyAlertness
     val peak = hours.indices.maxBy { hours[it] }
@@ -308,7 +331,7 @@ private fun ForecastCard(forecast: EnergyForecast) {
     val summary = stringResource(R.string.forecast_summary, LocalTime(peak, 0).formatted(), LocalTime(low, 0).formatted())
 
     Card(modifier = Modifier.fillMaxWidth()) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.animateContentSize().padding(16.dp)) {
             Text(
                 text = stringResource(R.string.forecast_title),
                 style = MaterialTheme.typography.titleMedium,
@@ -318,11 +341,12 @@ private fun ForecastCard(forecast: EnergyForecast) {
             EnergyGraph(
                 hourlyAlertness = hours,
                 description = summary,
+                sleepHours = sleepHours,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(180.dp),
             )
-            Text(stringResource(R.string.forecast_note), style = MaterialTheme.typography.bodySmall)
+            Text(stringResource(R.string.forecast_sleep_note), style = MaterialTheme.typography.bodySmall)
             TextButton(onClick = { showValues = !showValues }) {
                 Text(stringResource(if (showValues) R.string.forecast_hide_values else R.string.forecast_show_values))
             }

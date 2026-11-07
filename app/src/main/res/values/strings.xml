@@ -207,7 +207,7 @@
     <string name="checkin_level_5">Wide awake</string>
     <string name="checkin_done">Checked in for today</string>
     <string name="checkin_correction">Your body clock estimate was adjusted by %1$d min based on your recent check-ins.</string>
-    <string name="checkin_no_correction">Thanks! Your body clock estimate matches how you feel.</string>
+    <string name="checkin_no_correction">Thanks! Your check-in was recorded. More consistent feedback may be needed before adjusting the estimate.</string>
 
     <!-- Progress -->
     <string name="progress_title">Progress</string>
@@ -216,7 +216,7 @@
     <string name="progress_current_label">Current</string>
     <string name="progress_start_label">Start</string>
     <string name="progress_days_in">Day %1$d of %2$d</string>
-    <string name="progress_completed">Goal reached</string>
+    <string name="progress_completed">Goal date reached</string>
     <string name="progress_maintained">Maintaining your schedule</string>
     <string name="progress_timeline_label">DLMO over time</string>
     <string name="progress_empty">Progress will appear once the model has tracked a few days.</string>
@@ -229,7 +229,7 @@
     <string name="settings_caffeine_reminder">Caffeine cutoff</string>
     <string name="settings_bedtime_reminder">Bedtime</string>
     <string name="settings_checkin_reminder">Morning check-in</string>
-    <string name="settings_meal_reminder">Meal timing</string>
+    <string name="settings_meal_reminder">Last meal</string>
     <string name="settings_exact_alarms">Exact alarm timing</string>
     <string name="settings_exact_alarms_summary">Allows reminders at the exact time. Without this, reminders may be a few minutes late.</string>
     <string name="settings_exact_alarms_granted">Granted</string>
@@ -240,7 +240,39 @@
     <string name="settings_background_sync_denied">Not granted â€” tap to open settings</string>
 
     <!-- Goal completion -->
-    <string name="goal_completed_title">Goal reached!</string>
-    <string name="goal_completed_body">Your body clock has arrived. CircaPin will keep a plan that holds your schedule. Set a new goal whenever you\'re ready.</string>
+    <string name="goal_completed_title">Goal date reached</string>
+    <string name="goal_completed_body">Your target date has arrived. CircaPin will keep a plan that holds your schedule. Set a new goal whenever you\'re ready.</string>
     <string name="goal_maintained">Holding your schedule</string>
+    <string name="export_share">Share CircaPin data</string>
+    <string name="delete_all">Delete all data</string>
+    <string name="delete_all_warning">This removes all sleep records, goals, plans, check-ins and preferences from CircaPin and returns you to onboarding. Health Connect data and files already shared are unchanged.</string>
+    <string name="data_controls">Your data</string>
+    <string name="export_explanation">Export a complete local snapshot. Data leaves this app only when you choose where to share it.</string>
+    <string name="export_json">Export JSON</string>
+    <string name="export_csv">Export CSV archive</string>
+    <string name="operation_failed">The operation could not finish. Please try again.</string>
+    <string name="delete_sleep">Delete sleep record</string>
+    <string name="delete_sleep_warning">Remove this record from CircaPin? A synced record will stay deleted during future syncs. Your Health Connect data is unchanged.</string>
+    <string name="settings_first_meal">First meal</string>
+    <string name="settings_dim">Screen dimming</string>
+    <string name="permissions_title">Permissions</string>
+    <string name="permissions_explanation">Reminders are optional. You can use CircaPin with manual sleep entries and without notifications or background access.</string>
+    <string name="notifications_manage">Manage notifications</string>
+    <string name="notifications_enable">Enable notifications</string>
+    <string name="background_enable">Enable background sleep sync</string>
+    <string name="background_unavailable">Background access unavailable on this device</string>
+    <string name="usage_explanation">Optional screen-time access measures when your screen is on and suggests winding down after 30 minutes of use past dimming time. App names and usage events are never stored. Background nudges may be delayed by Android.</string>
+    <string name="usage_enable">Enable screen-time access</string>
+    <string name="usage_manage">Manage screen-time access</string>
+    <string name="channel_dim">Screen dimming</string>
+    <string name="reminder_dim_title">Time to dim the lights</string>
+    <string name="reminder_dim_text">Reduce bright light and dim your screen to prepare for sleep.</string>
+    <string name="reminder_first_meal_title">First meal window</string>
+    <string name="reminder_first_meal_text">A morning meal can help reinforce your planned schedule.</string>
+    <string name="progress_average">7-day average sleep score: %1$d / 100</string>
+    <string name="progress_target_date">Target date: %1$s</string>
+    <string name="checkin_unavailable">Check in between 4 AM and noon, after your daily forecast is ready. You can continue using the rest of the app.</string>
+    <string name="forecast_sleep_note">Shading marks estimated sleep hours. Dots show hourly predictions; values during sleep describe alertness if awake.</string>
+    <string name="screen_time_summary">Screen time today: %1$d min · After dimming: %2$d min</string>
+    <string name="onboarding_optional">After setup, Settings explains optional notifications, background sleep sync and screen-time access. You can skip every permission and log sleep manually.</string>
 </resources>

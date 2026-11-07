@@ -74,6 +74,14 @@ class ComputeEnergyForecastUseCaseTest {
     }
 
     @Test
+    fun `an afternoon nap improves later alertness without changing earlier hours`() {
+        val nap = SleepRecord(sleepOnset = at(TUESDAY, 15), wakeTime = at(TUESDAY, 15, 20), isNap = true, source = SleepSource.MANUAL)
+        val withNap = compute(plan(at(TUESDAY, 23)), model(LocalTime(21, 0)), regularNights + nap, 8f, UTC)
+        assertEquals(typical.hourlyAlertness[13], withNap.hourlyAlertness[13])
+        assertTrue(withNap.hourlyAlertness[17] > typical.hourlyAlertness[17])
+    }
+
+    @Test
     fun `a missing last night is assumed at the habitual time`() {
         val withoutLastNight = compute(plan(at(TUESDAY, 23)), model(LocalTime(21, 0)), regularNights.drop(1), 8f, UTC)
 

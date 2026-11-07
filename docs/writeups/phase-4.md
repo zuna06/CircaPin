@@ -1,26 +1,26 @@
 # Phase 4 Writeup: Feedback Loop
 
-Nov 7, 2026. Phase 4 is on the `phase-4` branch.
+Nov 7, 2026. Initial Phase 4 implementation; the verification and completion pass is recorded in `docs/writeups/phase-5.md` and `docs/mvp-verification.md`.
 
 ## Status
 
-**Phase 4 MVP is built and compiles.** The app now has morning check-ins that correct the DLMO estimate, goal completion with a maintenance mode, notification reminders for every plan item, a background worker for daily sync, a progress screen, and a settings screen. Tests and on-device verification are deferred to a follow-up pass.
+**Phase 4 MVP is built and compiles.** The app now has morning check-ins that correct the DLMO estimate, goal completion with a maintenance mode, notification reminders for every plan item, a background worker for daily sync, a progress screen, and a settings screen. The initial implementation deferred tests and on-device verification; see the later verification report for current results.
 
 ## What was implemented and how
 
-### Morning check-in and DLMO correction (FR-8)
+### Morning check-in and DLMO correction (FR-6)
 
 - `ProcessCheckInUseCase` records how alert the user feels (1–5) and compares it to the model's forecast at that hour. A mismatch of 0.2 or more on two consecutive mornings in the same direction triggers a correction: 15 min for a 1-point gap, 30 min for 2+. If the user feels more tired than predicted, DLMO shifts later; more alert shifts it earlier.
 - `CheckInScreen` shows 5 tap targets. After submitting, it shows whether a correction was applied and by how much.
 - A check-in prompt card appears on the Home screen each morning until the user checks in.
 
-### Goal completion and maintenance (FR-9)
+### Goal completion and maintenance
 
 - `GoalCompletionUseCase` transitions ACTIVE → COMPLETED on or after the target date, then COMPLETED → MAINTAINED on the next call.
 - The `observeActive()` DAO query now matches ACTIVE, COMPLETED, and MAINTAINED, so the app continues to generate plans and show the goal after completion.
 - Home shows a completion banner with an invitation to set a new goal, or a "Holding your schedule" card when maintained.
 
-### Notification reminders (FR-10)
+### Notification reminders (FR-7)
 
 - `ReminderScheduler` uses `AlarmManager.setExactAndAllowWhileIdle` when `SCHEDULE_EXACT_ALARM` is granted, falling back to `setAndAllowWhileIdle`. Five reminder types: bright light, caffeine cutoff, bedtime (30 min early), morning check-in (wake + 15 min), and last meal (30 min early).
 - `ReminderReceiver` handles the alarm, creates per-type notification channels, and offers a "Remind me in 30 min" snooze action on each notification.
@@ -31,7 +31,7 @@ Nov 7, 2026. Phase 4 is on the `phase-4` branch.
 - `DailyPlanWorker` (HiltWorker) runs once per day around 4 AM via WorkManager. It syncs Health Connect in the background (if `READ_HEALTH_DATA_IN_BACKGROUND` is granted), recomputes the model, checks goal completion, refreshes the plan, and schedules notifications.
 - WorkManager's default initialization is disabled in the manifest; `CircaPinApp` provides the Hilt-aware `Configuration`.
 
-### Progress screen (FR-7)
+### Progress screen (FR-8)
 
 - `ProgressScreen` shows a shift card with a progress bar (day N of M), start/current/target DLMO, and a timeline of the last 14 DLMO snapshots.
 - Goal status drives the display: active shows the progress bar, completed shows "Goal reached", maintained shows "Maintaining your schedule".
@@ -63,13 +63,11 @@ Nov 7, 2026. Phase 4 is on the `phase-4` branch.
 
 No new libraries. WorkManager and AlarmManager are Android framework. SharedPreferences backs the reminder toggle storage.
 
-## Known issues and follow-ups
+## Completion pass
 
-- **No Phase 4 tests yet.** ProcessCheckInUseCase, GoalCompletionUseCase, and the new ViewModels need unit tests. The existing 190 Phase 3 tests are unaffected.
-- **ReminderReceiver snooze** creates `ReminderScheduler(context)` directly instead of through Hilt. Works because it only needs a Context, but fragile if dependencies grow.
-- **Notification scheduling runs on every TodayUpdater emission**, not just when the plan changes. Harmless (alarms are idempotent via `FLAG_UPDATE_CURRENT`) but wasteful.
-- **Check-in availability** is not time-gated — it shows all day, not just in the morning. A morning-only window could be added in Phase 5.
-- **No deep link from the check-in notification** to the check-in screen. The notification just opens the app.
+The Phase 5 completion pass adds Phase 4 unit, ViewModel, UI and export/reset tests. It also persists corrections across sync, refreshes forecasts, restricts check-ins to the morning, opens check-in from its notification, scopes progress to the current goal and preserves the completion banner for its target date. Reminder scheduling preserves unchanged alarms and snoozes, reacts to preference changes, and restores after reboot or clock changes.
+
+See `docs/mvp-verification.md` for measured results. Individual biological accuracy, physical-device compatibility and battery behavior require separate real-world validation.
 
 ## Decisions
 

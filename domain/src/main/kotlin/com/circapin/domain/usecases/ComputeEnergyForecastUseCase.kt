@@ -37,7 +37,7 @@ class ComputeEnergyForecastUseCase {
         val dlmo = CircadianModel.dlmoClockTime(model, timeZone)
 
         val recorded = SleepDays.bouts(records)
-            .filter { it.wake > from && it.onset < dayStart + MORNING_CUTOFF }
+            .filter { it.wake > from && it.onset < hours.last() + 1.hours }
             .map { it.onset to it.wake }
         val lastNightLogged = recorded.any { (onset, wake) ->
             wake > dayStart - 6.hours && onset < dayStart + MORNING_CUTOFF && wake - onset >= SleepDays.MIN_MAIN_SLEEP

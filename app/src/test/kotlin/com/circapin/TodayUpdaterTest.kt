@@ -39,8 +39,14 @@ class TodayUpdaterTest {
         profiles,
         models,
         goals,
+        plans,
+        com.circapin.ui.FakePreferencesRepository(),
+        com.circapin.ui.FakeCheckInRepository(),
         sleepSync,
         RefreshTodayUseCase(plans, clock),
+        com.circapin.domain.usecases.GoalCompletionUseCase(goals),
+        com.circapin.ui.FakeReminders(),
+        clock,
     ) { TimeZone.UTC }
 
     @Test

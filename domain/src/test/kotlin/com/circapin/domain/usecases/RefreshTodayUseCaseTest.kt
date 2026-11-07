@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.toInstant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -30,15 +31,20 @@ import org.junit.jupiter.api.Test
 
 class RefreshTodayUseCaseTest {
     private class FakePlans : PlanRepository {
+        override suspend fun deleteScore(date: LocalDate) { scores.remove(date) }
         val plans = mutableMapOf<LocalDate, DailyPlan>()
         val scores = mutableMapOf<LocalDate, SleepScore>()
         var saves = 0
+        val forecasts = mutableMapOf<LocalDate, EnergyForecast>()
+        override suspend fun saveForecast(forecast: EnergyForecast) { forecasts[forecast.date] = forecast }
+        override fun observeScoresSince(from: LocalDate): Flow<List<SleepScore>> = flowOf(scores.values.filter { it.date >= from })
 
         override fun observeDay(date: LocalDate): Flow<DayPlan?> = flowOf(plans[date]?.let { DayPlan(it, null, null) })
         override fun observeScore(date: LocalDate): Flow<SleepScore?> = flowOf(scores[date])
         override suspend fun getPlan(date: LocalDate) = plans[date]
         override suspend fun saveDay(plan: DailyPlan, eatingWindow: EatingWindow, forecast: EnergyForecast) {
             plans[plan.date] = plan
+            forecasts[forecast.date] = forecast
             saves++
         }
         override suspend fun saveScore(score: SleepScore) {
@@ -66,11 +72,13 @@ class RefreshTodayUseCaseTest {
     fun `the plan is generated once and then kept for the day`() = runTest {
         refresh(emptyList(), profile(), model(LocalTime(0, 0)), goal(), synced, UTC)
         val first = plans.plans.getValue(TUESDAY)
+        val oldForecast = plans.forecasts[TUESDAY]
 
         refresh(listOf(lastNight), profile(), model(LocalTime(22, 0)), goal(), synced, UTC)
 
         assertEquals(1, plans.saves)
         assertEquals(first, plans.plans.getValue(TUESDAY))
+        org.junit.jupiter.api.Assertions.assertNotEquals(oldForecast, plans.forecasts[TUESDAY])
     }
 
     @Test
@@ -120,6 +128,26 @@ class RefreshTodayUseCaseTest {
 
         refresh(emptyList(), profile(), model(LocalTime(0, 0)).copy(lastUpdated = now + 2.hours), goal(), now + 1.hours, UTC)
         assertEquals(1, plans.saves)
+    }
+
+    @Test
+    fun `deleting the last night clears its stored score`() = runTest {
+        refresh(listOf(lastNight), profile(), model(LocalTime(21, 0)), goal(), synced, UTC)
+        assertNotNull(plans.scores[TUESDAY])
+        refresh(emptyList(), profile(), model(LocalTime(21, 0)), goal(), synced, UTC)
+        assertTrue(TUESDAY !in plans.scores)
+    }
+
+    @Test
+    fun `daylight saving never moves the local four AM boundary`() {
+        val zone = kotlinx.datetime.TimeZone.of("America/New_York")
+        val spring = LocalDate(2026, 3, 8)
+        val fall = LocalDate(2026, 11, 1)
+        for (date in listOf(spring, fall)) {
+            val atFour = kotlinx.datetime.LocalDateTime(date, LocalTime(4, 0)).toInstant(zone)
+            assertEquals(date, RefreshTodayUseCase.planDate(atFour, zone))
+            assertEquals(LocalDate.fromEpochDays(date.toEpochDays() - 1), RefreshTodayUseCase.planDate(atFour - 1.hours, zone))
+        }
     }
 
     @Test

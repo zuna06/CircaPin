@@ -4,11 +4,11 @@ Ideas that came up during development and were deliberately left out for now, wi
 
 ## Update the daily plan live
 
-**Now:** each day's plan (light, caffeine, bedtime, nap, meals) and its energy forecast are generated once, on the first app open after 4 AM, and then stay fixed. Only a goal change regenerates them. See `RefreshTodayUseCase`.
+**Now:** each day's action times (light, caffeine, bedtime, nap, meals) are generated once, on the first app open after 4 AM, and then stay fixed. Only a goal change regenerates action times. The forecast now refreshes when the model or sleep data changes, including after check-in. See `RefreshTodayUseCase`.
 
 **Why it's fixed:** stable times are easier to follow, and Phase 4 will schedule notifications from the plan. Times that move during the day would make those notifications unreliable.
 
-**The cost:** the plan waits for the app's own Health Connect sync on first open, but sleep that reaches Health Connect later, or is logged by hand after that, doesn't reach today's plan. The most likely case is a wearable that syncs last night to Health Connect after the app was opened. The body clock card and the goal progress on the home screen do update live, so the plan and the estimate can briefly disagree.
+**The cost:** the plan waits for the app's own Health Connect sync on first open, but sleep that reaches Health Connect later, or is logged by hand after that, doesn't change today's action times. The most likely case is a wearable that syncs last night to Health Connect after the app was opened. The body clock card and the goal progress on the home screen do update live, so the plan and the estimate can briefly disagree.
 
 **Options to weigh later:**
 

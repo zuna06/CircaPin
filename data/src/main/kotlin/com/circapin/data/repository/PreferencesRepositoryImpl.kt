@@ -15,8 +15,8 @@ class PreferencesRepositoryImpl(context: Context) : PreferencesRepository {
         val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
             trySend(read())
         }
-        trySend(read())
         prefs.registerOnSharedPreferenceChangeListener(listener)
+        trySend(read())
         awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
@@ -27,6 +27,8 @@ class PreferencesRepositoryImpl(context: Context) : PreferencesRepository {
             .putBoolean(KEY_BEDTIME, prefs.bedtimeReminder)
             .putBoolean(KEY_CHECK_IN, prefs.checkInReminder)
             .putBoolean(KEY_MEAL, prefs.mealReminder)
+            .putBoolean("first_meal", prefs.firstMealReminder)
+            .putBoolean("dim", prefs.dimReminder)
             .apply()
     }
 
@@ -36,6 +38,8 @@ class PreferencesRepositoryImpl(context: Context) : PreferencesRepository {
         bedtimeReminder = prefs.getBoolean(KEY_BEDTIME, true),
         checkInReminder = prefs.getBoolean(KEY_CHECK_IN, true),
         mealReminder = prefs.getBoolean(KEY_MEAL, false),
+        firstMealReminder = prefs.getBoolean("first_meal", false),
+        dimReminder = prefs.getBoolean("dim", true),
     )
 
     private companion object {

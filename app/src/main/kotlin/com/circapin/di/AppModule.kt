@@ -41,6 +41,11 @@ import kotlinx.datetime.TimeZone
 @InstallIn(SingletonComponent::class)
 object AppModule {
     @Provides
+    fun userDataActions(data: com.circapin.data.DataControls): com.circapin.data.UserDataActions = data
+
+    @Provides
+    fun permissionReader(permissions: com.circapin.ui.settings.DevicePermissions): com.circapin.ui.settings.PermissionReader = permissions
+    @Provides
     @Singleton
     fun database(@ApplicationContext context: Context): CircaPinDatabase = CircaPinDatabase.create(context)
 
@@ -71,7 +76,7 @@ object AppModule {
     fun modelRepository(database: CircaPinDatabase): ModelRepository = ModelRepositoryImpl(database.modelStateDao())
 
     @Provides
-    fun updateModelUseCase(models: ModelRepository, clock: Clock) = UpdateModelUseCase(models, clock)
+    fun updateModelUseCase(models: ModelRepository, clock: Clock, checkIns: CheckInRepository) = UpdateModelUseCase(models, clock, checkIns)
 
     @Provides
     fun logSleepUseCase(repository: SleepRepository, clock: Clock) = LogSleepUseCase(repository, clock)
@@ -111,6 +116,7 @@ object AppModule {
         PreferencesRepositoryImpl(context)
 
     @Provides
+    @Singleton
     fun processCheckInUseCase(checkIns: CheckInRepository, models: ModelRepository) =
         ProcessCheckInUseCase(checkIns, models)
 
@@ -120,4 +126,7 @@ object AppModule {
     @Provides
     @Singleton
     fun reminderScheduler(@ApplicationContext context: Context) = ReminderScheduler(context)
+
+    @Provides
+    fun planReminders(scheduler: ReminderScheduler): com.circapin.notifications.PlanReminders = scheduler
 }

@@ -53,6 +53,16 @@ interface SleepRecordDao {
     @Query("DELETE FROM sleep_record WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
+    @Query("DELETE FROM sleep_record WHERE source = 'HEALTH_CONNECT' AND sleepOnsetMillis >= :fromMillis AND wakeTimeMillis <= :toMillis AND (:noIds OR externalId NOT IN (:externalIds))")
+    suspend fun deleteMissingSynced(fromMillis: Long, toMillis: Long, externalIds: List<String>, noIds: Boolean)
+
+    @Transaction
+    suspend fun reconcileSynced(records: List<SleepRecordEntity>, superseded: List<Long>, fromMillis: Long, toMillis: Long) {
+        val ids = records.mapNotNull { it.externalId }
+        deleteMissingSynced(fromMillis, toMillis, ids, ids.isEmpty())
+        saveSynced(records, superseded)
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun rememberDeleted(deleted: DeletedSyncRecordEntity)
 
@@ -155,6 +165,8 @@ interface ScheduleGoalDao {
     @Transaction
     suspend fun replaceActive(goal: ScheduleGoalEntity): Long {
         updateStatus(GoalStatus.ACTIVE, GoalStatus.ABANDONED)
+        updateStatus(GoalStatus.COMPLETED, GoalStatus.ABANDONED)
+        updateStatus(GoalStatus.MAINTAINED, GoalStatus.ABANDONED)
         return insert(goal.copy(id = 0, status = GoalStatus.ACTIVE))
     }
 
@@ -241,6 +253,9 @@ interface ScreenTimeSnapshotDao {
 
 @Dao
 interface SleepScoreDao {
+    @Query("DELETE FROM sleep_score WHERE date = :date")
+    suspend fun deleteForDate(date: LocalDate)
+
     @Query("SELECT * FROM sleep_score WHERE date >= :from ORDER BY date")
     fun observeSince(from: LocalDate): Flow<List<SleepScoreEntity>>
 

@@ -36,6 +36,10 @@ class SleepSync @Inject constructor(
     /** When the latest attempt finished. Null until the first one does. */
     val lastAttempt: StateFlow<Instant?> = _lastAttempt.asStateFlow()
 
+    suspend fun <T> exclusive(block: suspend () -> T): T = mutex.withLock {
+        try { block() } finally { _lastAttempt.value = null; _lastResult.value = null }
+    }
+
     /** Overlapping requests run one after the other rather than reading Health Connect twice at once. */
     suspend fun sync(): SleepSyncResult = mutex.withLock {
         _syncing.value = true

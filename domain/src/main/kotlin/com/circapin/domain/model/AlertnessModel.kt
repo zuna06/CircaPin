@@ -18,8 +18,8 @@ import kotlinx.datetime.TimeZone
  * asleep. Process C is a 24-hour cosine timed from the user's DLMO. Alertness is S plus C, less a penalty for
  * longer-term sleep debt that a few days of history can't capture.
  *
- * The constants are as I understand the published model and haven't been checked against the paper here.
- * Treat them as provisional, like the rest of the model, until check-ins calibrate them in Phase 4.
+ * The S/C constants match Åkerstedt, Folkard and Portin (2004), p. A76. The DLMO peak offset, debt penalty,
+ * normalization and simplified sleep handling are app-specific assumptions; see docs/model-notes.md.
  */
 internal object AlertnessModel {
     const val S_CEILING = 14.3

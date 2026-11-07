@@ -35,7 +35,7 @@ class HomeViewModelTest {
     private val plans = FakePlanRepository()
     private val profiles = FakeUserProfileRepository(UserProfile(chronotypeScore = 14, onboardingComplete = true))
 
-    private fun viewModel() = HomeViewModel(goals, models, plans, profiles, clock) { TimeZone.UTC }
+    private fun viewModel() = HomeViewModel(goals, models, plans, profiles, com.circapin.ui.FakeCheckInRepository(), clock) { TimeZone.UTC }
 
     @Test
     fun `without a goal there is nothing to measure against`() = runTest(UnconfinedTestDispatcher()) {

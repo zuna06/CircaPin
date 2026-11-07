@@ -14,6 +14,7 @@ class GoalCompletionUseCase(private val goals: GoalRepository) {
     suspend operator fun invoke(goal: ScheduleGoal, today: LocalDate): GoalStatus {
         if (goal.status != GoalStatus.ACTIVE && goal.status != GoalStatus.COMPLETED) return goal.status
         if (today.toEpochDays() < goal.targetDate.toEpochDays()) return goal.status
+        if (goal.status == GoalStatus.COMPLETED && today == goal.targetDate) return goal.status
 
         val newStatus = if (goal.status == GoalStatus.ACTIVE) GoalStatus.COMPLETED else GoalStatus.MAINTAINED
         goals.update(goal.copy(status = newStatus))

@@ -12,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -72,12 +73,19 @@ class StartRouteViewModel @Inject constructor(profiles: UserProfileRepository) :
 }
 
 @Composable
-fun CircaPinNavHost(viewModel: StartRouteViewModel = hiltViewModel()) {
+fun CircaPinNavHost(openCheckIn: Boolean = false, onDeepLinkHandled: () -> Unit = {}, viewModel: StartRouteViewModel = hiltViewModel()) {
     val startRoute by viewModel.startRoute.collectAsStateWithLifecycle()
     val start = startRoute ?: return
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
+
+    LaunchedEffect(openCheckIn, currentRoute) {
+        if (openCheckIn && currentRoute != null && currentRoute !in listOf(ONBOARDING_ROUTE, FIRST_GOAL_ROUTE)) {
+            navController.navigate(CHECK_IN_ROUTE) { launchSingleTop = true }
+            onDeepLinkHandled()
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0),
@@ -115,7 +123,7 @@ fun CircaPinNavHost(viewModel: StartRouteViewModel = hiltViewModel()) {
             composable(CHECK_IN_ROUTE) {
                 CheckInRoute(onDone = { navController.popBackStack() })
             }
-            composable(SETTINGS_ROUTE) { SettingsRoute() }
+            composable(SETTINGS_ROUTE) { SettingsRoute(onReset = { navController.navigate(ONBOARDING_ROUTE) { popUpTo(navController.graph.id) { inclusive = true } } }) }
             composable(SLEEP_LOG_ROUTE) {
                 SleepLogRoute(onAddEntry = { isNap -> navController.navigate("$SLEEP_ENTRY_ROUTE/$isNap") })
             }

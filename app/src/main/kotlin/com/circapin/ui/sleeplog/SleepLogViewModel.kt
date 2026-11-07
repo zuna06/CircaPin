@@ -26,12 +26,14 @@ data class SleepLogUiState(
 @HiltViewModel
 class SleepLogViewModel @Inject constructor(
     private val sleepSync: SleepSync,
-    repository: SleepRepository,
+    private val repository: SleepRepository,
 ) : ViewModel() {
     val state: StateFlow<SleepLogUiState> =
         combine(repository.observeRecords(), sleepSync.syncing, sleepSync.lastResult) { records, syncing, result ->
             SleepLogUiState(records, if (syncing) SyncStatus.SYNCING else result.toStatus())
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(STOP_TIMEOUT_MILLIS), SleepLogUiState())
+
+    fun delete(record: SleepRecord) { viewModelScope.launch { repository.delete(record) } }
 
     fun sync() {
         viewModelScope.launch { sleepSync.sync() }

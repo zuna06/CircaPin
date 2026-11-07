@@ -6,4 +6,6 @@ enum class ReminderType(val channelId: String, val requestCodeBase: Int) {
     BEDTIME("circapin_bedtime", 300),
     CHECK_IN("circapin_check_in", 400),
     MEAL("circapin_meal", 500),
+    FIRST_MEAL("circapin_meal", 600),
+    DIM("circapin_dim", 700),
 }

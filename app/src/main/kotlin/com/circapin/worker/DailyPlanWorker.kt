@@ -1,6 +1,9 @@
 package com.circapin.worker
 
 import android.content.Context
+import com.circapin.DataGuard
+import kotlinx.coroutines.sync.withLock
+import kotlin.coroutines.cancellation.CancellationException
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -43,15 +46,17 @@ class DailyPlanWorker @AssistedInject constructor(
     private val refreshToday: RefreshTodayUseCase,
     private val goalCompletion: GoalCompletionUseCase,
     private val reminderScheduler: ReminderScheduler,
+    private val permissions: com.circapin.ui.settings.DevicePermissions,
+    private val checkIns: com.circapin.domain.repository.CheckInRepository,
 ) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result {
+    override suspend fun doWork(): Result = DataGuard.mutex.withLock {
+        val profile = profiles.observeProfile().first() ?: return@withLock Result.success()
         val timeZone = TimeZone.currentSystemDefault()
-        try { sleep.syncFromHealthConnect() } catch (_: Exception) { /* fall back to stored data */ }
+        try { if (permissions.read().background) sleep.syncFromHealthConnect() } catch (e: CancellationException) { throw e } catch (_: Exception) { /* fall back to stored data */ }
 
         val now = Instant.fromEpochMilliseconds(System.currentTimeMillis())
         val records = sleep.observeRecords().first()
-        val profile = profiles.observeProfile().first() ?: return Result.success()
 
         updateModel(records, profile, timeZone)
 
@@ -71,10 +76,10 @@ class DailyPlanWorker @AssistedInject constructor(
             val reminderPrefs = prefs.observeReminderPreferences().first()
             val wakeTime = plan.targetBedtime + profile.sleepNeedHours.toDouble().hours
             val day = plans.observeDay(date).first()
-            reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, wakeTime)
+            reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, wakeTime, checkIns.get(date) != null)
         }
 
-        return Result.success()
+        Result.success()
     }
 
     companion object {

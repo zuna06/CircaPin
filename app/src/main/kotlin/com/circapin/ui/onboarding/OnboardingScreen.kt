@@ -155,6 +155,7 @@ private fun ConnectStep(
         modifier = Modifier.semantics { heading() },
     )
     Text(stringResource(R.string.onboarding_baseline, result.baselineDlmo.formatted()))
+    Text(stringResource(R.string.onboarding_optional))
     Text(stringResource(R.string.health_connect_title), style = MaterialTheme.typography.titleMedium)
 
     when (status) {

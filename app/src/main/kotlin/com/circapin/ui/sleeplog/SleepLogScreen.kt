@@ -22,6 +22,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -51,6 +53,7 @@ fun SleepLogRoute(onAddEntry: (isNap: Boolean) -> Unit, viewModel: SleepLogViewM
         onSync = viewModel::sync,
         onConnect = requestPermission,
         onAddEntry = onAddEntry,
+        onDelete = viewModel::delete,
     )
 }
 
@@ -61,7 +64,15 @@ fun SleepLogScreen(
     onSync: () -> Unit,
     onConnect: () -> Unit,
     onAddEntry: (isNap: Boolean) -> Unit,
+    onDelete: (SleepRecord) -> Unit = {},
 ) {
+    var deleting by remember { mutableStateOf<SleepRecord?>(null) }
+    deleting?.let { record ->
+        AlertDialog(onDismissRequest = { deleting = null }, title = { Text(stringResource(R.string.delete_sleep)) },
+            text = { Text(stringResource(R.string.delete_sleep_warning)) },
+            confirmButton = { TextButton(onClick = { deleting = null; onDelete(record) }) { Text(stringResource(R.string.delete_sleep)) } },
+            dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(android.R.string.cancel)) } })
+    }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -106,6 +117,7 @@ fun SleepLogScreen(
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 8.dp)) {
                     items(records) { record ->
                         SleepRecordRow(record)
+                        TextButton(onClick = { deleting = record }) { Text(stringResource(R.string.delete_sleep)) }
                         HorizontalDivider()
                     }
                 }

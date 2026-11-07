@@ -1,6 +1,21 @@
 package com.circapin.ui.settings
 
 import android.content.Intent
+import android.net.Uri
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.semantics.Role
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.health.connect.client.PermissionController
+import androidx.health.connect.client.permission.HealthPermission
+import androidx.core.content.FileProvider
 import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.clickable
@@ -32,15 +47,50 @@ import com.circapin.R
 import com.circapin.domain.entities.ReminderPreferences
 
 @Composable
-fun SettingsRoute(viewModel: SettingsViewModel = hiltViewModel()) {
+fun SettingsRoute(onReset: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.state.collectAsStateWithLifecycle()
-    SettingsScreen(state = state, onPrefsChange = viewModel::updatePrefs)
+    val context = LocalContext.current
+    val shareTitle = stringResource(R.string.export_share)
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshPermissions() }
+        lifecycle.addObserver(observer)
+        viewModel.refreshPermissions()
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    val background = rememberLauncherForActivityResult(PermissionController.createRequestPermissionResultContract()) { viewModel.refreshPermissions() }
+    val notifications = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { viewModel.refreshPermissions() }
+    LaunchedEffect(state.exported) {
+        state.exported?.let { file ->
+            val uri = FileProvider.getUriForFile(context, "${context.packageName}.exports", file)
+            context.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                type = if (file.extension == "zip") "application/zip" else "application/json"
+                putExtra(Intent.EXTRA_STREAM, uri)
+                clipData = android.content.ClipData.newRawUri("CircaPin export", uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }, shareTitle))
+            viewModel.consumeExport()
+        }
+    }
+    LaunchedEffect(state.resetDone) { if (state.resetDone) onReset() }
+    SettingsScreen(state, viewModel::updatePrefs,
+        onBackground = { background.launch(com.circapin.data.healthconnect.HealthConnectSleepSource.PERMISSIONS + HealthPermission.PERMISSION_READ_HEALTH_DATA_IN_BACKGROUND) },
+        onNotifications = {
+            if (Build.VERSION.SDK_INT >= 33 && !state.permissions.notifications) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
+            else context.startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName))
+        }, onExport = viewModel::export, onDeleteAll = { viewModel.deleteAll() })
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(state: SettingsUiState, onPrefsChange: (ReminderPreferences) -> Unit) {
+fun SettingsScreen(state: SettingsUiState, onPrefsChange: (ReminderPreferences) -> Unit,
+    onBackground: () -> Unit = {}, onNotifications: () -> Unit = {}, onExport: (Boolean) -> Unit = {}, onDeleteAll: () -> Unit = {}) {
     val context = LocalContext.current
+    var confirmDelete by remember { mutableStateOf(false) }
+    if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text(stringResource(R.string.delete_all)) },
+        text = { Text(stringResource(R.string.delete_all_warning)) },
+        confirmButton = { TextButton(onClick = { confirmDelete = false; onDeleteAll() }) { Text(stringResource(R.string.delete_all)) } },
+        dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(android.R.string.cancel)) } })
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) }) { padding ->
         Column(
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -56,42 +106,59 @@ fun SettingsScreen(state: SettingsUiState, onPrefsChange: (ReminderPreferences) 
             )
             SwitchRow(
                 label = stringResource(R.string.settings_light_reminder),
+                enabled = !state.busy,
                 checked = state.prefs.lightReminder,
                 onCheckedChange = { onPrefsChange(state.prefs.copy(lightReminder = it)) },
             )
             SwitchRow(
                 label = stringResource(R.string.settings_caffeine_reminder),
+                enabled = !state.busy,
                 checked = state.prefs.caffeineReminder,
                 onCheckedChange = { onPrefsChange(state.prefs.copy(caffeineReminder = it)) },
             )
             SwitchRow(
                 label = stringResource(R.string.settings_bedtime_reminder),
+                enabled = !state.busy,
                 checked = state.prefs.bedtimeReminder,
                 onCheckedChange = { onPrefsChange(state.prefs.copy(bedtimeReminder = it)) },
             )
             SwitchRow(
                 label = stringResource(R.string.settings_checkin_reminder),
+                enabled = !state.busy,
                 checked = state.prefs.checkInReminder,
                 onCheckedChange = { onPrefsChange(state.prefs.copy(checkInReminder = it)) },
             )
             SwitchRow(
                 label = stringResource(R.string.settings_meal_reminder),
+                enabled = !state.busy,
                 checked = state.prefs.mealReminder,
                 onCheckedChange = { onPrefsChange(state.prefs.copy(mealReminder = it)) },
             )
 
+            SwitchRow(stringResource(R.string.settings_first_meal), state.prefs.firstMealReminder, enabled = !state.busy) { onPrefsChange(state.prefs.copy(firstMealReminder = it)) }
+            SwitchRow(stringResource(R.string.settings_dim), state.prefs.dimReminder, enabled = !state.busy) { onPrefsChange(state.prefs.copy(dimReminder = it)) }
+            Text(stringResource(R.string.permissions_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.permissions_explanation))
+            Button(onClick = onNotifications) { Text(stringResource(if (state.permissions.notifications) R.string.notifications_manage else R.string.notifications_enable)) }
+            Text(stringResource(R.string.settings_background_sync_summary))
+            Button(onClick = onBackground, enabled = state.permissions.backgroundAvailable) {
+                Text(stringResource(if (state.permissions.background) R.string.settings_background_sync_granted else if (state.permissions.backgroundAvailable) R.string.background_enable else R.string.background_unavailable))
+            }
+            Text(stringResource(R.string.usage_explanation))
+            Button(onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setData(Uri.parse("package:${context.packageName}"))) }) {
+                Text(stringResource(if (state.permissions.usage) R.string.usage_manage else R.string.usage_enable))
+            }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable {
-                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM))
+                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).setData(Uri.parse("package:${context.packageName}")))
                         }
                         .padding(vertical = 12.dp),
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
                         Text(stringResource(R.string.settings_exact_alarms))
                         Text(
                             text = stringResource(R.string.settings_exact_alarms_summary),
@@ -109,20 +176,29 @@ fun SettingsScreen(state: SettingsUiState, onPrefsChange: (ReminderPreferences) 
                     )
                 }
             }
+            Text(stringResource(R.string.data_controls), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.export_explanation))
+            Button(onClick = { onExport(false) }, enabled = !state.busy) { Text(stringResource(R.string.export_json)) }
+            Button(onClick = { onExport(true) }, enabled = !state.busy) { Text(stringResource(R.string.export_csv)) }
+            OutlinedButton(onClick = { confirmDelete = true }, enabled = !state.busy) { Text(stringResource(R.string.delete_all)) }
+            if (state.busy) CircularProgressIndicator()
+            if (state.error) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
         }
     }
 }
 
 @Composable
-private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+private fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true, onCheckedChange: (Boolean) -> Unit) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
             .padding(vertical = 4.dp),
     ) {
         Text(label, modifier = Modifier.weight(1f))
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(checked = checked, enabled = enabled, onCheckedChange = null)
     }
 }

@@ -19,4 +19,9 @@ interface PlanRepository {
     suspend fun saveDay(plan: DailyPlan, eatingWindow: EatingWindow, forecast: EnergyForecast)
 
     suspend fun saveScore(score: SleepScore)
+    suspend fun deleteScore(date: LocalDate)
+
+    suspend fun saveForecast(forecast: EnergyForecast)
+
+    fun observeScoresSince(from: LocalDate): Flow<List<SleepScore>>
 }

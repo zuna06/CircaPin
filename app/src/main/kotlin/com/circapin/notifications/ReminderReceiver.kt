@@ -14,7 +14,10 @@ import androidx.core.content.ContextCompat
 import com.circapin.MainActivity
 import com.circapin.R
 
+@dagger.hilt.android.AndroidEntryPoint
 class ReminderReceiver : BroadcastReceiver() {
+
+    @javax.inject.Inject lateinit var scheduler: ReminderScheduler
 
     override fun onReceive(context: Context, intent: Intent) {
         val typeName = intent.getStringExtra(ReminderScheduler.EXTRA_TYPE) ?: return
@@ -23,19 +26,19 @@ class ReminderReceiver : BroadcastReceiver() {
         when (intent.action) {
             ReminderScheduler.ACTION_SNOOZE -> {
                 NotificationManagerCompat.from(context).cancel(type.requestCodeBase)
-                val scheduler = ReminderScheduler(context)
                 scheduler.snooze(type)
                 return
             }
         }
 
         ensureChannel(context, type)
-        if (!hasNotificationPermission(context)) return
+        if (android.os.Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
 
         val openApp = PendingIntent.getActivity(
-            context, 0,
-            Intent(context, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP },
-            PendingIntent.FLAG_IMMUTABLE,
+            context, type.requestCodeBase,
+            Intent(context, MainActivity::class.java).apply { flags = Intent.FLAG_ACTIVITY_SINGLE_TOP; putExtra("open_check_in", type == ReminderType.CHECK_IN) },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val snooze = PendingIntent.getBroadcast(
             context, type.requestCodeBase + 1,
@@ -53,10 +56,12 @@ class ReminderReceiver : BroadcastReceiver() {
             .setContentText(text)
             .setContentIntent(openApp)
             .setAutoCancel(true)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(text))
             .addAction(0, context.getString(R.string.reminder_snooze), snooze)
             .build()
 
-        NotificationManagerCompat.from(context).notify(type.requestCodeBase, notification)
+        try { NotificationManagerCompat.from(context).notify(type.requestCodeBase, notification) }
+        catch (_: SecurityException) { /* Permission may be revoked between the check and posting. */ }
     }
 
     private fun content(context: Context, type: ReminderType): Pair<String, String> = when (type) {
@@ -64,6 +69,8 @@ class ReminderReceiver : BroadcastReceiver() {
         ReminderType.CAFFEINE -> context.getString(R.string.reminder_caffeine_title) to context.getString(R.string.reminder_caffeine_text)
         ReminderType.BEDTIME -> context.getString(R.string.reminder_bedtime_title) to context.getString(R.string.reminder_bedtime_text)
         ReminderType.CHECK_IN -> context.getString(R.string.reminder_checkin_title) to context.getString(R.string.reminder_checkin_text)
+        ReminderType.FIRST_MEAL -> context.getString(R.string.reminder_first_meal_title) to context.getString(R.string.reminder_first_meal_text)
+        ReminderType.DIM -> context.getString(R.string.reminder_dim_title) to context.getString(R.string.reminder_dim_text)
         ReminderType.MEAL -> context.getString(R.string.reminder_meal_title) to context.getString(R.string.reminder_meal_text)
     }
 
@@ -73,12 +80,11 @@ class ReminderReceiver : BroadcastReceiver() {
             ReminderType.CAFFEINE -> context.getString(R.string.channel_caffeine)
             ReminderType.BEDTIME -> context.getString(R.string.channel_bedtime)
             ReminderType.CHECK_IN -> context.getString(R.string.channel_check_in)
-            ReminderType.MEAL -> context.getString(R.string.channel_meal)
+            ReminderType.MEAL, ReminderType.FIRST_MEAL -> context.getString(R.string.channel_meal)
+            ReminderType.DIM -> context.getString(R.string.channel_dim)
         }
         val channel = NotificationChannel(type.channelId, name, NotificationManager.IMPORTANCE_HIGH)
         context.getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
-    private fun hasNotificationPermission(context: Context): Boolean =
-        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 }

@@ -48,12 +48,15 @@ fun ProgressScreen(state: ProgressUiState) {
                 .padding(16.dp),
         ) {
             if (state.loading) return@Column
-            if (state.snapshots.isEmpty()) {
+            if (state.goal == null) {
                 Text(stringResource(R.string.progress_empty))
                 return@Column
             }
 
             ShiftCard(state)
+            Text(stringResource(R.string.body_clock_debt_and_jetlag, state.sleepDebtHours, state.socialJetlagHours))
+            state.averageScore?.let { Text(stringResource(R.string.progress_average, it)) }
+            Text(stringResource(R.string.progress_target_date, state.goal.targetDate.formatted()))
             TimelineCard(state)
         }
     }
@@ -79,14 +82,14 @@ private fun ShiftCard(state: ProgressUiState) {
                     if (state.totalDays > 0) {
                         Text(stringResource(R.string.progress_days_in, state.dayIndex, state.totalDays))
                         LinearProgressIndicator(
-                            progress = { state.dayIndex.toFloat() / state.totalDays },
+                            progress = { state.shiftProgress },
                             modifier = Modifier.fillMaxWidth().height(8.dp),
                         )
                     }
                 }
             }
 
-            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 Column {
                     Text(stringResource(R.string.progress_start_label), style = MaterialTheme.typography.labelSmall)
                     Text(state.startDlmo?.formatted() ?: "—")

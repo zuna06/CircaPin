@@ -8,7 +8,8 @@ import com.circapin.domain.repository.SleepRepository
 import com.circapin.domain.repository.UserProfileRepository
 import com.circapin.domain.usecases.GoalCompletionUseCase
 import com.circapin.domain.usecases.RefreshTodayUseCase
-import com.circapin.notifications.ReminderScheduler
+import com.circapin.notifications.PlanReminders
+import kotlin.time.Clock
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.datetime.TimeZone
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Keeps today's plan and sleep score current while the app runs. It reacts to new sleep data, model updates,
@@ -36,10 +38,12 @@ class TodayUpdater @Inject constructor(
     private val goals: GoalRepository,
     private val plans: PlanRepository,
     private val prefs: PreferencesRepository,
+    private val checkIns: com.circapin.domain.repository.CheckInRepository,
     private val sleepSync: SleepSync,
     private val refreshToday: RefreshTodayUseCase,
     private val goalCompletion: GoalCompletionUseCase,
-    private val reminderScheduler: ReminderScheduler,
+    private val reminderScheduler: PlanReminders,
+    private val clock: Clock,
     private val timeZone: Provider<TimeZone>,
 ) {
     fun start(scope: CoroutineScope, tick: Duration = 15.minutes): Job {
@@ -49,26 +53,28 @@ class TodayUpdater @Inject constructor(
                 delay(tick)
             }
         }
-        val goalAndSync = combine(goals.observeActive(), sleepSync.lastAttempt, ticks) { goal, attempt, _ -> goal to attempt }
+        val goalAndSync = combine(goals.observeActive(), sleepSync.lastAttempt, ticks, prefs.observeReminderPreferences(), checkIns.observeAll()) { goal, attempt, _, _, _ -> goal to attempt }
         return combine(sleep.observeRecords(), profiles.observeProfile(), models.observeState(), goalAndSync) {
                 records, profile, model, (goal, attempt) ->
             if (profile == null) return@combine
+            DataGuard.mutex.withLock {
             val tz = timeZone.get()
 
             if (goal != null) {
-                val date = RefreshTodayUseCase.planDate(kotlin.time.Clock.System.now(), tz)
+                val date = RefreshTodayUseCase.planDate(clock.now(), tz)
                 goalCompletion(goal, date)
             }
 
             refreshToday(records, profile, model, goal, attempt, tz)
 
-            val date = RefreshTodayUseCase.planDate(kotlin.time.Clock.System.now(), tz)
+            val date = RefreshTodayUseCase.planDate(clock.now(), tz)
             val plan = plans.getPlan(date)
             if (plan != null) {
                 val reminderPrefs = prefs.observeReminderPreferences().first()
                 val wakeTime = plan.targetBedtime + profile.sleepNeedHours.toDouble().hours
                 val day = plans.observeDay(date).first()
-                reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, wakeTime)
+                reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, wakeTime, checkIns.get(date) != null)
+            }
             }
         }.launchIn(scope)
     }

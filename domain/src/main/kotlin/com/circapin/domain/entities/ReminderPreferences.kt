@@ -6,4 +6,6 @@ data class ReminderPreferences(
     val bedtimeReminder: Boolean = true,
     val checkInReminder: Boolean = true,
     val mealReminder: Boolean = false,
+    val firstMealReminder: Boolean = false,
+    val dimReminder: Boolean = true,
 )

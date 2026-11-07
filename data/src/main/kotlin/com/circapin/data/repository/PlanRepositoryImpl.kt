@@ -39,4 +39,10 @@ class PlanRepositoryImpl(
     override suspend fun saveScore(score: SleepScore) {
         scores.upsert(score.toEntity())
     }
+    override suspend fun deleteScore(date: LocalDate) = scores.deleteForDate(date)
+
+    override suspend fun saveForecast(forecast: EnergyForecast) = forecasts.upsert(forecast.toEntity())
+
+    override fun observeScoresSince(from: LocalDate): Flow<List<SleepScore>> =
+        scores.observeSince(from).map { list -> list.map { it.toDomain() } }
 }
