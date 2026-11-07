@@ -76,8 +76,6 @@ class DaoTest {
         val profile = UserProfileEntity(
             chronotypeScore = 12,
             sleepNeedHours = 8f,
-            targetWakeMinuteOfDay = null,
-            targetDate = null,
             onboardingComplete = true,
         )
         dao.upsert(profile)
@@ -144,6 +142,48 @@ class DaoTest {
         assertEquals(2, ids.size)
         assertTrue(kept in ids)
         assertFalse(replaced in ids)
+    }
+
+    @Test
+    fun aDeletedSyncedRecordIsNotSyncedBackIn() = runTest {
+        val dao = db.sleepRecordDao()
+        dao.saveSynced(listOf(sleep(externalId = "a"), sleep(externalId = "b", onset = 3_000, wake = 4_000)), emptyList())
+
+        dao.deleteAndRemember(dao.observeAll().first().single { it.externalId == "a" }, deletedAtMillis = 9_000)
+        dao.saveSynced(listOf(sleep(externalId = "a"), sleep(externalId = "b", onset = 3_000, wake = 4_000)), emptyList())
+
+        assertEquals(listOf("b"), dao.observeAll().first().map { it.externalId })
+        assertEquals(listOf("a"), dao.getDeletedExternalIds())
+    }
+
+    @Test
+    fun deletingAManualRecordLeavesNoTombstone() = runTest {
+        val dao = db.sleepRecordDao()
+        val id = dao.insert(sleep())
+
+        dao.deleteAndRemember(dao.getById(id)!!, deletedAtMillis = 9_000)
+
+        assertNull(dao.getById(id))
+        assertTrue(dao.getDeletedExternalIds().isEmpty())
+    }
+
+    @Test
+    fun modelHistoryOnlyGrowsWhenTheEstimateChanges() = runTest {
+        val dao = db.modelStateDao()
+        val state = ModelStateEntity(
+            estimatedDlmoMillis = 1_000,
+            sleepDebtHours = 2f,
+            socialJetlagHours = 1f,
+            confidence = 0.5f,
+            lastUpdatedMillis = 10,
+        )
+
+        dao.save(state)
+        dao.save(state.copy(lastUpdatedMillis = 20))
+        dao.save(state.copy(sleepDebtHours = 3f, lastUpdatedMillis = 30))
+
+        assertEquals(3f, dao.observe().first()?.sleepDebtHours)
+        assertEquals(listOf(10L, 30L), db.modelSnapshotDao().observeAll().first().map { it.capturedAtMillis })
     }
 
     @Test

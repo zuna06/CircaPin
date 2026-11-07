@@ -19,6 +19,9 @@ interface SleepRepository {
 
     suspend fun add(record: SleepRecord)
 
+    /** Removes a record. A synced record stays deleted on later syncs. */
+    suspend fun delete(record: SleepRecord)
+
     suspend fun hasOverlap(start: Instant, end: Instant): Boolean
 
     suspend fun healthConnectStatus(): HealthConnectStatus

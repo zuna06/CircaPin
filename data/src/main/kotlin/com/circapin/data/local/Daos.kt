@@ -3,6 +3,7 @@ package com.circapin.data.local
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
 import androidx.room.Update
@@ -52,14 +53,30 @@ interface SleepRecordDao {
     @Query("DELETE FROM sleep_record WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun rememberDeleted(deleted: DeletedSyncRecordEntity)
+
+    @Query("SELECT externalId FROM deleted_sync_record")
+    suspend fun getDeletedExternalIds(): List<String>
+
+    /** Deletes a record. A synced one is also remembered, so the next sync skips it. */
+    @Transaction
+    suspend fun deleteAndRemember(record: SleepRecordEntity, deletedAtMillis: Long) {
+        delete(record)
+        record.externalId?.let { rememberDeleted(DeletedSyncRecordEntity(it, deletedAtMillis)) }
+    }
+
     /**
      * Inserts new records and refreshes ones already stored, matching on [SleepRecordEntity.externalId].
      * Manual records the sync replaces are removed in the same transaction, so a night is never lost or doubled.
+     * Records the user deleted are skipped.
      */
     @Transaction
     suspend fun saveSynced(records: List<SleepRecordEntity>, supersededManualIds: List<Long>) {
         deleteByIds(supersededManualIds)
+        val deleted = getDeletedExternalIds().toSet()
         for (record in records) {
+            if (record.externalId in deleted) continue
             val existingId = record.externalId?.let { findIdByExternalId(it) }
             if (existingId == null) insert(record) else update(record.copy(id = existingId))
         }
@@ -76,6 +93,32 @@ interface ModelStateDao {
 
     @Query("DELETE FROM model_state")
     suspend fun clear()
+
+    @Query("SELECT * FROM model_snapshot ORDER BY capturedAtMillis DESC, id DESC LIMIT 1")
+    suspend fun latestSnapshot(): ModelSnapshotEntity?
+
+    @Insert
+    suspend fun insertSnapshot(snapshot: ModelSnapshotEntity): Long
+
+    /**
+     * Stores the current estimate, and adds it to the history only when it differs from the last snapshot.
+     * The app recomputes on every launch, so this keeps the history to real changes.
+     */
+    @Transaction
+    suspend fun save(state: ModelStateEntity) {
+        upsert(state)
+        val snapshot = ModelSnapshotEntity(
+            capturedAtMillis = state.lastUpdatedMillis,
+            estimatedDlmoMillis = state.estimatedDlmoMillis,
+            sleepDebtHours = state.sleepDebtHours,
+            socialJetlagHours = state.socialJetlagHours,
+            confidence = state.confidence,
+        )
+        val latest = latestSnapshot()
+        if (latest == null || latest.copy(id = 0, capturedAtMillis = snapshot.capturedAtMillis) != snapshot) {
+            insertSnapshot(snapshot)
+        }
+    }
 }
 
 @Dao

@@ -28,9 +28,9 @@ data class ChronotypeResult(
 /**
  * Scores the onboarding questionnaire and turns it into a day-one DLMO estimate.
  *
- * The score bands and the DLMO range are provisional. They only need to give the model a
- * reasonable starting point until sleep data and check-ins take over, and they should be
- * checked against the model validation harness in Phase 2.
+ * The DLMO range is calibrated so that consistent answers land near the outline's rule of DLMO two hours
+ * before habitual sleep onset, using the preferred-bedtime answer as the onset. That makes it consistent, not
+ * validated against measured melatonin. Real sleep data takes over within a few nights.
  */
 object ChronotypeQuestionnaire {
     val MIN_SCORE = ChronotypeQuestion.entries.sumOf { it.optionPoints.min() }
@@ -38,9 +38,9 @@ object ChronotypeQuestionnaire {
 
     private const val MINUTES_PER_DAY = 24 * 60
 
-    // Counted from the start of the evening's calendar day, so 25:00 means 1:00 AM.
-    private const val EARLIEST_DLMO_MINUTES = 20 * 60
-    private const val LATEST_DLMO_MINUTES = 25 * 60
+    // Counted from the start of the evening's calendar day, so 24:30 means 12:30 AM.
+    private const val EARLIEST_DLMO_MINUTES = 18 * 60 + 30
+    private const val LATEST_DLMO_MINUTES = 24 * 60 + 30
 
     /** @param answers the selected option index for every question. */
     fun score(answers: Map<ChronotypeQuestion, Int>): ChronotypeResult {
@@ -48,7 +48,7 @@ object ChronotypeQuestionnaire {
             val option = requireNotNull(answers[question]) { "No answer for $question" }
             question.optionPoints[option]
         }
-        return ChronotypeResult(score, typeFor(score), baselineDlmoFor(score))
+        return ChronotypeResult(score, typeFor(score), baselineDlmo(score))
     }
 
     private fun typeFor(score: Int): ChronotypeType {
@@ -62,8 +62,9 @@ object ChronotypeQuestionnaire {
         }
     }
 
-    private fun baselineDlmoFor(score: Int): LocalTime {
-        val eveningness = (MAX_SCORE - score).toFloat() / (MAX_SCORE - MIN_SCORE)
+    /** Day-one DLMO for a questionnaire score. Scores outside the valid range are clamped. */
+    fun baselineDlmo(score: Int): LocalTime {
+        val eveningness = (MAX_SCORE - score.coerceIn(MIN_SCORE, MAX_SCORE)).toFloat() / (MAX_SCORE - MIN_SCORE)
         val minutes = EARLIEST_DLMO_MINUTES + (eveningness * (LATEST_DLMO_MINUTES - EARLIEST_DLMO_MINUTES)).toInt()
         val minuteOfDay = minutes % MINUTES_PER_DAY
         return LocalTime(minuteOfDay / 60, minuteOfDay % 60)

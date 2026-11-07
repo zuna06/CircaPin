@@ -83,6 +83,13 @@
     <string name="sleep_source_manual">Manual</string>
     <string name="sleep_quality">%1$d%% asleep</string>
 
+    <!-- Body clock -->
+    <string name="body_clock_title">Body clock estimate</string>
+    <string name="body_clock_dlmo">Melatonin onset around %1$s</string>
+    <string name="body_clock_debt_and_jetlag">Sleep debt %1$.1f h · Social jetlag %2$.1f h</string>
+    <string name="body_clock_confidence">Confidence %1$d%%</string>
+    <string name="body_clock_questionnaire_only">Based on your questionnaire answers only</string>
+
     <!-- Sleep entry -->
     <string name="sleep_entry_onset">Fell asleep</string>
     <string name="sleep_entry_wake">Woke up</string>

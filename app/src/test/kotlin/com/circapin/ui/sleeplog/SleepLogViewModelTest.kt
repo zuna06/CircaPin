@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.circapin.domain.entities.SleepRecord
 import com.circapin.domain.entities.SleepSource
 import com.circapin.domain.repository.SleepSyncResult
+import com.circapin.ui.FakeModelRepository
 import com.circapin.ui.FakeSleepRepository
 import com.circapin.ui.MainDispatcherExtension
 import kotlin.time.Duration.Companion.hours
@@ -27,7 +28,7 @@ class SleepLogViewModelTest {
     fun `syncs on launch`() {
         val repository = FakeSleepRepository()
 
-        SleepLogViewModel(repository)
+        SleepLogViewModel(repository, FakeModelRepository())
 
         assertEquals(1, repository.syncCount)
     }
@@ -42,7 +43,7 @@ class SleepLogViewModelTest {
         )
 
         cases.forEach { (result, expected) ->
-            val viewModel = SleepLogViewModel(FakeSleepRepository(syncResult = result))
+            val viewModel = SleepLogViewModel(FakeSleepRepository(syncResult = result), FakeModelRepository())
 
             viewModel.state.test {
                 assertEquals(expected, expectMostRecentItem().syncStatus)
@@ -54,7 +55,7 @@ class SleepLogViewModelTest {
     @Test
     fun `new records reach the screen`() = runTest {
         val repository = FakeSleepRepository()
-        val viewModel = SleepLogViewModel(repository)
+        val viewModel = SleepLogViewModel(repository, FakeModelRepository())
 
         viewModel.state.test {
             assertEquals(emptyList<SleepRecord>(), expectMostRecentItem().records)
@@ -69,7 +70,7 @@ class SleepLogViewModelTest {
     @Test
     fun `a manual retry syncs again`() {
         val repository = FakeSleepRepository()
-        val viewModel = SleepLogViewModel(repository)
+        val viewModel = SleepLogViewModel(repository, FakeModelRepository())
 
         viewModel.sync()
 

@@ -9,6 +9,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.circapin.domain.entities.ModelState
 import com.circapin.domain.entities.SleepRecord
 import com.circapin.domain.entities.SleepSource
 import kotlin.time.Duration.Companion.hours
@@ -105,6 +106,31 @@ class SleepLogScreenTest {
         records = listOf(newest) + older
 
         compose.onNodeWithText("Nap · Manual").assertIsDisplayed()
+    }
+
+    @Test
+    fun theBodyClockCardShowsTheModel() {
+        val model = ModelState(
+            estimatedDlmo = onset,
+            sleepDebtHours = 2.5f,
+            socialJetlagHours = 1f,
+            confidence = 4f / 7,
+            lastUpdated = onset,
+        )
+        show(SleepLogUiState(records = emptyList(), syncStatus = SyncStatus.SYNCED, model = model))
+
+        compose.onNodeWithText("Body clock estimate").assertIsDisplayed()
+        compose.onNodeWithText("Melatonin onset around", substring = true).assertIsDisplayed()
+        compose.onNodeWithText("Sleep debt 2.5 h · Social jetlag 1.0 h").assertIsDisplayed()
+        compose.onNodeWithText("Confidence 57%").assertIsDisplayed()
+    }
+
+    @Test
+    fun withoutSleepDataTheCardSaysItUsesTheQuestionnaire() {
+        val model = ModelState(onset, 0f, 0f, confidence = 0f, lastUpdated = onset)
+        show(SleepLogUiState(records = emptyList(), syncStatus = SyncStatus.SYNCED, model = model))
+
+        compose.onNodeWithText("Based on your questionnaire answers only").assertIsDisplayed()
     }
 
     @Test

@@ -35,31 +35,24 @@ Vico and WorkManager are declared but not used yet.
 
 ## Issues and things to consider
 
-**Likely to affect Phase 2**
+**Handled by the Phase 2 model**
 
-- **Overlapping sessions:** sync replaces a manual record once Health Connect sessions cover at least half of it. Below that both are kept, so a night a wearable only partly recorded isn't lost, but the overlap counts twice. Two apps reporting the same night are also both stored.
-- **Nap detection:** Health Connect has no nap flag, so any session up to 3 hours is a nap, including a very short night.
-- **Chronotype numbers are provisional:** the score bands and DLMO range are estimates, and the wording is original rather than the published MEQ. Validate them in Phase 2.
+- **Overlapping sessions:** sync replaces a manual record once Health Connect sessions cover at least half of it, and keeps both below that. Two apps reporting the same night are both stored. The model merges overlaps, so neither double counts.
+- **Nap detection:** Health Connect has no nap flag, so the log calls any session up to 3 hours a nap. The model ignores the flag and uses the longest sleep of each day.
+- **Chronotype numbers:** the wording is original rather than the published MEQ. Phase 2 recalibrated the DLMO range.
 
 **Deferred or missing**
 
 - **Background sync (FR-2):** sync only runs on launch and on Sync. A worker should also need `READ_HEALTH_DATA_IN_BACKGROUND` (untested for the app).
-- **Goal setup (FR-1):** no milestone lists it, so `UserProfile` target fields stay empty. Phase 3 needs it, because plans depend on a goal.
-- **Deletion:** there's no delete in the UI yet. A deleted Health Connect record will return on the next sync, and sessions deleted at the source stay in the log.
+- **Goal setup (FR-1):** no milestone lists it. Phase 3 needs it, because plans depend on a goal.
+- **Deletion:** there's no delete in the UI yet. Since Phase 2, deleted synced records stay deleted, but sessions deleted at the source stay in the log.
 - **Theme and icon:** there's no `ui/theme/` package or launcher icon yet.
+- **Permissions (Phase 4):** exact alarms need a fallback, and WorkManager adds four permissions, including `FOREGROUND_SERVICE`.
 
-**Outline corrections still needed**
-
-- **Min SDK:** the Health Connect client's minimum is API 26, so API 28 is a choice.
-- **Permissions:** `POST_NOTIFICATIONS` is unlisted, exact alarms need a fallback, and WorkManager adds four permissions, including `FOREGROUND_SERVICE`.
+**Outline corrections:** all applied to the PDF on Nov 7: the social jetlag example, the min SDK reason, `POST_NOTIFICATIONS`, and FR-11 and FR-12 in Phase 3.
 
 ## Decisions
 
-**Applied:** all seven earlier decisions, except that the outline still needs FR-11 and FR-12 added to Phase 3. **Added beyond the outline:** `SleepRecord.externalId` for de-duplication, and `ScheduleGoal.createdAtMillis` to find a goal's starting phase.
+**Applied:** all nine. The last two, keeping schedule targets only in `ScheduleGoal` and remembering deleted synced records, landed in Phase 2 as a database migration. **Added beyond the outline:** `SleepRecord.externalId` for de-duplication, and `ScheduleGoal.createdAtMillis` to find a goal's starting phase.
 
-| Still open | Recommendation |
-|---|---|
-| Target wake time and date are in both `UserProfile` and `ScheduleGoal` | Keep them only in `ScheduleGoal`. |
-| Where deleted Health Connect records are remembered | Keep a tombstone so sync skips them. Needed by Phase 5. |
-
-**Next:** start Phase 2 on its own branch.
+**Next:** see the Phase 2 writeup.

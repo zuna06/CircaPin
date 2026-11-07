@@ -5,6 +5,7 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.circapin.data.healthconnect.SleepSessionSource
 import com.circapin.data.local.CircaPinDatabase
+import com.circapin.domain.entities.ModelState
 import com.circapin.domain.entities.SleepRecord
 import com.circapin.domain.entities.SleepSource
 import com.circapin.domain.entities.UserProfile
@@ -17,8 +18,6 @@ import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalTime
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -204,14 +203,37 @@ class RepositoryTest {
         val repository = UserProfileRepositoryImpl(db.userProfileDao())
         assertNull(repository.observeProfile().first())
 
-        val profile = UserProfile(
-            chronotypeScore = 14,
-            targetWakeTime = LocalTime(7, 30),
-            targetDate = LocalDate(2027, 6, 1),
-            onboardingComplete = true,
-        )
+        val profile = UserProfile(chronotypeScore = 14, sleepNeedHours = 7.5f, onboardingComplete = true)
         repository.save(profile)
 
         assertEquals(profile, repository.observeProfile().first())
+    }
+
+    @Test
+    fun aDeletedSyncedNightStaysDeleted() = runTest {
+        source.sessions = listOf(synced("a"), synced("b", hoursAgo = 36))
+        repository.syncFromHealthConnect()
+
+        repository.delete(repository.observeRecords().first().single { it.externalId == "a" })
+        repository.syncFromHealthConnect()
+
+        assertEquals(listOf("b"), repository.observeRecords().first().map { it.externalId })
+    }
+
+    @Test
+    fun modelStateSurvivesARoundTrip() = runTest {
+        val repository = ModelRepositoryImpl(db.modelStateDao())
+        assertNull(repository.observeState().first())
+
+        val state = ModelState(
+            estimatedDlmo = now + 10.hours,
+            sleepDebtHours = 2.5f,
+            socialJetlagHours = 1.25f,
+            confidence = 0.6f,
+            lastUpdated = now,
+        )
+        repository.save(state)
+
+        assertEquals(state, repository.observeState().first())
     }
 }

@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.circapin.R
+import com.circapin.domain.entities.ModelState
 import com.circapin.domain.entities.SleepRecord
 import com.circapin.domain.entities.SleepSource
 import com.circapin.ui.components.rememberHealthConnectPermissionRequest
@@ -99,6 +100,7 @@ fun SleepLogScreen(
                 .padding(padding),
         ) {
             SyncBanner(state.syncStatus, onConnect)
+            state.model?.let { BodyClockCard(it) }
             val records = state.records
             when {
                 records == null -> Unit
@@ -145,6 +147,33 @@ private fun SyncBanner(status: SyncStatus, onConnect: () -> Unit) {
             if (status == SyncStatus.NOT_CONNECTED) {
                 TextButton(onClick = onConnect) { Text(stringResource(R.string.action_connect)) }
             }
+        }
+    }
+}
+
+@Composable
+private fun BodyClockCard(model: ModelState) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .semantics(mergeDescendants = true) {},
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(12.dp),
+        ) {
+            Text(stringResource(R.string.body_clock_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.body_clock_dlmo, model.estimatedDlmo.formattedTime()))
+            Text(stringResource(R.string.body_clock_debt_and_jetlag, model.sleepDebtHours, model.socialJetlagHours))
+            Text(
+                text = if (model.confidence == 0f) {
+                    stringResource(R.string.body_clock_questionnaire_only)
+                } else {
+                    stringResource(R.string.body_clock_confidence, (model.confidence * 100).roundToInt())
+                },
+                style = MaterialTheme.typography.bodySmall,
+            )
         }
     }
 }

@@ -23,6 +23,10 @@ class FakeSleepRepository(
         records.value += record
     }
 
+    override suspend fun delete(record: SleepRecord) {
+        records.value -= record
+    }
+
     override suspend fun hasOverlap(start: Instant, end: Instant) = overlaps
 
     override suspend fun healthConnectStatus() = status

@@ -27,6 +27,7 @@ class LogSleepUseCaseTest {
 
         override fun observeRecords(): Flow<List<SleepRecord>> = flowOf(added)
         override suspend fun add(record: SleepRecord) { added += record }
+        override suspend fun delete(record: SleepRecord) { added -= record }
         override suspend fun hasOverlap(start: Instant, end: Instant) = overlaps
         override suspend fun healthConnectStatus() = HealthConnectStatus.NOT_CONNECTED
         override suspend fun syncFromHealthConnect() = SleepSyncResult.NotConnected

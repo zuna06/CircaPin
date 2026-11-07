@@ -29,6 +29,10 @@ class SleepRepositoryImpl(
         dao.insert(record.toEntity())
     }
 
+    override suspend fun delete(record: SleepRecord) {
+        dao.deleteAndRemember(record.toEntity(), clock.now().toEpochMilliseconds())
+    }
+
     override suspend fun hasOverlap(start: Instant, end: Instant): Boolean =
         dao.hasOverlap(start.toEpochMilliseconds(), end.toEpochMilliseconds())
 

@@ -12,14 +12,20 @@ import kotlinx.datetime.LocalDate
 /** Primary key of the tables that only ever hold one row. */
 internal const val SINGLETON_ROW_ID = 0
 
+/** Schedule targets live only in [ScheduleGoalEntity], so a profile never disagrees with the active goal. */
 @Entity(tableName = "user_profile")
 data class UserProfileEntity(
     @PrimaryKey val id: Int = SINGLETON_ROW_ID,
     val chronotypeScore: Int,
     val sleepNeedHours: Float,
-    val targetWakeMinuteOfDay: Int?,
-    val targetDate: LocalDate?,
     val onboardingComplete: Boolean,
+)
+
+/** Health Connect records the user deleted, so the next sync doesn't bring them back. */
+@Entity(tableName = "deleted_sync_record")
+data class DeletedSyncRecordEntity(
+    @PrimaryKey val externalId: String,
+    val deletedAtMillis: Long,
 )
 
 @Entity(

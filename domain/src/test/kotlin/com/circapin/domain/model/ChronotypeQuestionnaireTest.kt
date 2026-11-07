@@ -19,7 +19,7 @@ class ChronotypeQuestionnaireTest {
 
         assertEquals(ChronotypeQuestionnaire.MAX_SCORE, result.score)
         assertEquals(ChronotypeType.DEFINITE_MORNING, result.type)
-        assertEquals(LocalTime(20, 0), result.baselineDlmo)
+        assertEquals(LocalTime(18, 30), result.baselineDlmo)
     }
 
     @Test
@@ -28,7 +28,31 @@ class ChronotypeQuestionnaireTest {
 
         assertEquals(ChronotypeQuestionnaire.MIN_SCORE, result.score)
         assertEquals(ChronotypeType.DEFINITE_EVENING, result.type)
-        assertEquals(LocalTime(1, 0), result.baselineDlmo)
+        assertEquals(LocalTime(0, 30), result.baselineDlmo)
+    }
+
+    /**
+     * Someone who answers consistently should get a DLMO about two hours before the bedtime they chose, the
+     * outline's rule. Bedtimes are the middle of each answer's range, measured from the evening's midnight.
+     */
+    @Test
+    fun `consistent answers land within 45 minutes of two hours before the chosen bedtime`() {
+        val bedtimeMinutes = listOf(20 * 60 + 30, 21 * 60 + 38, 23 * 60 + 30, 25 * 60 + 23, 26 * 60 + 30)
+
+        bedtimeMinutes.forEachIndexed { level, bedtime ->
+            val eveningness = level / 4.0
+            val answers = ChronotypeQuestion.entries.associateWith { question ->
+                val morningFirst = question.optionPoints.indices.sortedByDescending { question.optionPoints[it] }
+                morningFirst[kotlin.math.round(eveningness * (morningFirst.size - 1)).toInt()]
+            }
+            val dlmo = ChronotypeQuestionnaire.score(answers).baselineDlmo
+            val dlmoMinutes = (dlmo.hour * 60 + dlmo.minute).let { if (it < 12 * 60) it + 24 * 60 else it }
+
+            assertTrue(
+                kotlin.math.abs(dlmoMinutes - (bedtime - 120)) <= 45,
+                "level $level: DLMO $dlmo, bedtime ${bedtime / 60}:${bedtime % 60}",
+            )
+        }
     }
 
     @Test

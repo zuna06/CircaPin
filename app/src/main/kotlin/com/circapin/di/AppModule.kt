@@ -4,12 +4,15 @@ import android.content.Context
 import com.circapin.data.healthconnect.HealthConnectSleepSource
 import com.circapin.data.healthconnect.SleepSessionSource
 import com.circapin.data.local.CircaPinDatabase
+import com.circapin.data.repository.ModelRepositoryImpl
 import com.circapin.data.repository.SleepRepositoryImpl
 import com.circapin.data.repository.UserProfileRepositoryImpl
+import com.circapin.domain.repository.ModelRepository
 import com.circapin.domain.repository.SleepRepository
 import com.circapin.domain.repository.UserProfileRepository
 import com.circapin.domain.usecases.CompleteOnboardingUseCase
 import com.circapin.domain.usecases.LogSleepUseCase
+import com.circapin.domain.usecases.UpdateModelUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -48,6 +51,13 @@ object AppModule {
     @Singleton
     fun userProfileRepository(database: CircaPinDatabase): UserProfileRepository =
         UserProfileRepositoryImpl(database.userProfileDao())
+
+    @Provides
+    @Singleton
+    fun modelRepository(database: CircaPinDatabase): ModelRepository = ModelRepositoryImpl(database.modelStateDao())
+
+    @Provides
+    fun updateModelUseCase(models: ModelRepository, clock: Clock) = UpdateModelUseCase(models, clock)
 
     @Provides
     fun logSleepUseCase(repository: SleepRepository, clock: Clock) = LogSleepUseCase(repository, clock)
