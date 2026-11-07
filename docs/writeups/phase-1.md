@@ -4,7 +4,7 @@ Nov 6, 2026.
 
 ## Status
 
-**All five Phase 1 items are built, and the deliverable works on an API 37 emulator:** the app reads sleep data from Health Connect and manual input, stores it locally, and shows a raw sleep log. Phase 1 is merged to `main`. **Not recorded here:** a Health Connect read on a real device.
+**All five Phase 1 items are built, and the deliverable works on an API 37 emulator:** the app reads sleep data from Health Connect and manual input, stores it locally, and shows a raw sleep log. Phase 1 is merged to `main` and pushed. **Not recorded here:** a Health Connect read on a real device.
 
 ## What was implemented and how
 
@@ -29,28 +29,27 @@ Vico and WorkManager are declared but not used yet.
 
 ## Verification
 
-- **Automated:** 70 tests pass from a clean build with no warnings: 31 on the JVM and 39 on the emulator. The emulator tests cover all 11 tables and a real Health Connect write and read, including 1,100 sessions across pages.
-- **By hand on the emulator:** the questionnaire, the real permission screen, sync, manual logging, the overlap error, relaunch without onboarding, and the disconnected banner, all with no crashes.
+- **Automated:** 83 tests pass with no warnings: 38 on the JVM and 45 on the emulator. The emulator tests cover all 11 tables and a real Health Connect write and read, including 1,100 sessions across pages.
+- **By hand on the emulator:** the questionnaire, the real permission screen, sync, manual logging, the overlap error, relaunch without onboarding, and the disconnected banner, all with no crashes. Sync used 8 seeded sessions from `com.drifttest.hcseed`; the 6 checked on screen had no stage data.
 - **Not verified:** a real device, any API below 37 (including minSdk 28), and stage data from a real wearable.
 
 ## Issues and things to consider
 
 **Likely to affect Phase 2**
 
-- **Double counting:** the overlap check only covers manual entries. A manual night that a wearable later syncs is stored twice, which would inflate sleep debt.
+- **Overlapping sessions:** sync replaces a manual record once Health Connect sessions cover at least half of it. Below that both are kept, so a night a wearable only partly recorded isn't lost, but the overlap counts twice. Two apps reporting the same night are also both stored.
 - **Nap detection:** Health Connect has no nap flag, so any session up to 3 hours is a nap, including a very short night.
-- **Chronotype numbers are provisional:** the score bands and DLMO range are my estimates, and the wording is original rather than the published MEQ. Validate them in Phase 2.
+- **Chronotype numbers are provisional:** the score bands and DLMO range are estimates, and the wording is original rather than the published MEQ. Validate them in Phase 2.
 
 **Deferred or missing**
 
 - **Background sync (FR-2):** sync only runs on launch and on Sync. A worker should also need `READ_HEALTH_DATA_IN_BACKGROUND` (untested for the app).
-- **Goal setup (FR-1):** it isn't a Phase 1 task, so `UserProfile` target fields stay empty.
+- **Goal setup (FR-1):** no milestone lists it, so `UserProfile` target fields stay empty. Phase 3 needs it, because plans depend on a goal.
 - **Deletion:** there's no delete in the UI yet. A deleted Health Connect record will return on the next sync, and sessions deleted at the source stay in the log.
 - **Theme and icon:** there's no `ui/theme/` package or launcher icon yet.
 
 **Outline corrections still needed**
 
-- **Social jetlag example:** midnight-8 AM vs 3 AM-11 AM is 3 hours, not 1.5. Fix it before it becomes a Phase 2 fixture.
 - **Min SDK:** the Health Connect client's minimum is API 26, so API 28 is a choice.
 - **Permissions:** `POST_NOTIFICATIONS` is unlisted, exact alarms need a fallback, and WorkManager adds four permissions, including `FOREGROUND_SERVICE`.
 
@@ -60,8 +59,7 @@ Vico and WorkManager are declared but not used yet.
 
 | Still open | Recommendation |
 |---|---|
-| Handling a synced session that overlaps a manual one | Keep the Health Connect record and drop the manual one during sync. |
 | Target wake time and date are in both `UserProfile` and `ScheduleGoal` | Keep them only in `ScheduleGoal`. |
 | Where deleted Health Connect records are remembered | Keep a tombstone so sync skips them. Needed by Phase 5. |
 
-**Next:** settle the overlap decision and start Phase 2.
+**Next:** start Phase 2 on its own branch.

@@ -1,5 +1,6 @@
 package com.circapin.domain.entities
 
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlin.time.Instant
 
@@ -21,6 +22,18 @@ data class SleepRecord(
     val qualityScore: Float? = null,
 ) {
     val durationMinutes: Long get() = (wakeTime - sleepOnset).inWholeMinutes
+
+    /**
+     * True when [sessions] together cover at least half of this record, so they describe the same sleep.
+     * Below that this record is treated as the better account, as when a wearable stops partway through a night.
+     */
+    fun isSupersededBy(sessions: List<SleepRecord>): Boolean {
+        val covered = sessions.fold(Duration.ZERO) { total, session -> total + overlapWith(session) }
+        return covered * 2 >= wakeTime - sleepOnset
+    }
+
+    private fun overlapWith(other: SleepRecord): Duration =
+        (minOf(wakeTime, other.wakeTime) - maxOf(sleepOnset, other.sleepOnset)).coerceAtLeast(Duration.ZERO)
 
     companion object {
         /** Longest session treated as a nap. Also how Health Connect sessions are classified. */

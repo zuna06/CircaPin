@@ -108,6 +108,67 @@ class RepositoryTest {
         )
     }
 
+    private fun manual(fromHoursAgo: Int, toHoursAgo: Int) = SleepRecord(
+        sleepOnset = now - fromHoursAgo.hours,
+        wakeTime = now - toHoursAgo.hours,
+        isNap = false,
+        source = SleepSource.MANUAL,
+    )
+
+    private fun session(id: String, fromHoursAgo: Int, toHoursAgo: Int) =
+        manual(fromHoursAgo, toHoursAgo).copy(externalId = id, source = SleepSource.HEALTH_CONNECT)
+
+    @Test
+    fun aSyncedNightReplacesTheManualEntryForThatNight() = runTest {
+        repository.add(manual(fromHoursAgo = 13, toHoursAgo = 5))
+        source.sessions = listOf(session("a", fromHoursAgo = 12, toHoursAgo = 4))
+
+        repository.syncFromHealthConnect()
+        repository.syncFromHealthConnect()
+
+        assertEquals(listOf("a"), repository.observeRecords().first().map { it.externalId })
+    }
+
+    @Test
+    fun fragmentsOfANightReplaceItTogether() = runTest {
+        repository.add(manual(fromHoursAgo = 12, toHoursAgo = 4))
+        source.sessions = listOf(
+            session("a", fromHoursAgo = 12, toHoursAgo = 9),
+            session("b", fromHoursAgo = 8, toHoursAgo = 5),
+        )
+
+        repository.syncFromHealthConnect()
+
+        assertEquals(listOf("b", "a"), repository.observeRecords().first().map { it.externalId })
+    }
+
+    @Test
+    fun aPartlyRecordedNightKeepsTheManualEntry() = runTest {
+        repository.add(manual(fromHoursAgo = 12, toHoursAgo = 4))
+        source.sessions = listOf(session("a", fromHoursAgo = 12, toHoursAgo = 10))
+
+        repository.syncFromHealthConnect()
+
+        assertEquals(
+            setOf(SleepSource.MANUAL, SleepSource.HEALTH_CONNECT),
+            repository.observeRecords().first().map { it.source }.toSet(),
+        )
+    }
+
+    @Test
+    fun aFailedSyncRemovesNothing() = runTest {
+        repository.add(manual(fromHoursAgo = 12, toHoursAgo = 4))
+        source.sessions = listOf(session("a", fromHoursAgo = 12, toHoursAgo = 4))
+        source.failure = IOException("Health Connect rate limit")
+
+        repository.syncFromHealthConnect()
+
+        assertEquals(
+            listOf(SleepSource.MANUAL),
+            repository.observeRecords().first().map { it.source },
+        )
+    }
+
     @Test
     fun syncReportsWhyItCouldNotRun() = runTest {
         source.status = HealthConnectStatus.NOT_CONNECTED

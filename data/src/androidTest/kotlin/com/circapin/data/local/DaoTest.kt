@@ -123,13 +123,37 @@ class DaoTest {
     @Test
     fun savingSyncedRecordsTwiceDoesNotDuplicateThem() = runTest {
         val dao = db.sleepRecordDao()
-        dao.saveSynced(listOf(sleep(externalId = "a"), sleep(externalId = "b", onset = 3_000, wake = 4_000)))
+        dao.saveSynced(listOf(sleep(externalId = "a"), sleep(externalId = "b", onset = 3_000, wake = 4_000)), emptyList())
 
-        dao.saveSynced(listOf(sleep(externalId = "a", wake = 2_500)))
+        dao.saveSynced(listOf(sleep(externalId = "a", wake = 2_500)), emptyList())
 
         val records = dao.observeAll().first()
         assertEquals(2, records.size)
         assertEquals(2_500L, records.single { it.externalId == "a" }.wakeTimeMillis)
+    }
+
+    @Test
+    fun savingSyncedRecordsRemovesTheManualRecordsTheyReplace() = runTest {
+        val dao = db.sleepRecordDao()
+        val replaced = dao.insert(sleep())
+        val kept = dao.insert(sleep(onset = 5_000, wake = 6_000))
+
+        dao.saveSynced(listOf(sleep(externalId = "a", onset = 1_100, wake = 2_100)), listOf(replaced))
+
+        val ids = dao.observeAll().first().map { it.id }
+        assertEquals(2, ids.size)
+        assertTrue(kept in ids)
+        assertFalse(replaced in ids)
+    }
+
+    @Test
+    fun onlyManualRecordsCountAsManualOverlaps() = runTest {
+        val dao = db.sleepRecordDao()
+        val manual = dao.insert(sleep(onset = 1_000, wake = 2_000))
+        dao.insert(sleep(externalId = "a", onset = 1_000, wake = 2_000).copy(source = SleepSource.HEALTH_CONNECT))
+        dao.insert(sleep(onset = 3_000, wake = 4_000))
+
+        assertEquals(listOf(manual), dao.getManualOverlapping(500, 2_500).map { it.id })
     }
 
     @Test

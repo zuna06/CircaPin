@@ -41,8 +41,11 @@ class SleepRepositoryImpl(
                 HealthConnectStatus.NOT_CONNECTED -> SleepSyncResult.NotConnected
                 HealthConnectStatus.CONNECTED -> {
                     val now = clock.now()
-                    val records = source.readSessions(now - SYNC_WINDOW, now)
-                    dao.saveSynced(records.map { it.toEntity() })
+                    val from = now - SYNC_WINDOW
+                    val records = source.readSessions(from, now)
+                    val superseded = dao.getManualOverlapping(from.toEpochMilliseconds(), now.toEpochMilliseconds())
+                        .filter { it.toDomain().isSupersededBy(records) }
+                    dao.saveSynced(records.map { it.toEntity() }, superseded.map { it.id })
                     SleepSyncResult.Synced(records.size)
                 }
             }

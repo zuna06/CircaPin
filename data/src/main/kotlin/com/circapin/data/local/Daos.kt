@@ -37,6 +37,9 @@ interface SleepRecordDao {
     @Query("SELECT EXISTS(SELECT 1 FROM sleep_record WHERE sleepOnsetMillis < :endMillis AND wakeTimeMillis > :startMillis)")
     suspend fun hasOverlap(startMillis: Long, endMillis: Long): Boolean
 
+    @Query("SELECT * FROM sleep_record WHERE source = 'MANUAL' AND sleepOnsetMillis < :endMillis AND wakeTimeMillis > :startMillis")
+    suspend fun getManualOverlapping(startMillis: Long, endMillis: Long): List<SleepRecordEntity>
+
     @Insert
     suspend fun insert(record: SleepRecordEntity): Long
 
@@ -46,9 +49,16 @@ interface SleepRecordDao {
     @Delete
     suspend fun delete(record: SleepRecordEntity)
 
-    /** Inserts new records and refreshes ones already stored, matching on [SleepRecordEntity.externalId]. */
+    @Query("DELETE FROM sleep_record WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    /**
+     * Inserts new records and refreshes ones already stored, matching on [SleepRecordEntity.externalId].
+     * Manual records the sync replaces are removed in the same transaction, so a night is never lost or doubled.
+     */
     @Transaction
-    suspend fun saveSynced(records: List<SleepRecordEntity>) {
+    suspend fun saveSynced(records: List<SleepRecordEntity>, supersededManualIds: List<Long>) {
+        deleteByIds(supersededManualIds)
         for (record in records) {
             val existingId = record.externalId?.let { findIdByExternalId(it) }
             if (existingId == null) insert(record) else update(record.copy(id = existingId))
