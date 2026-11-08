@@ -50,6 +50,19 @@ class ReminderSchedulerTest {
         assertEquals(plan.brightLight.start.toEpochMilliseconds(), prefs.getLong("LIGHT0", 0))
     }
 
+    @Test fun checkInUsesTodaysMealAnchorAndBoundsTomorrowFallback() {
+        val zone = TimeZone.currentSystemDefault()
+        val nextDate = LocalDate.fromEpochDays(date.toEpochDays() + 1)
+        val morning = LocalDateTime(date, LocalTime(7, 30)).toInstant(zone)
+        val lateWake = LocalDateTime(nextDate, LocalTime(12, 0)).toInstant(zone)
+        scheduler.schedule(plan, EatingWindow(date, morning, now + 4.hours), ReminderPreferences(), lateWake, false)
+        assertEquals(LocalDateTime(date, LocalTime(7, 15)).toInstant(zone).toEpochMilliseconds(), prefs.getLong("CHECK_IN0", -1))
+        assertEquals(LocalDateTime(nextDate, LocalTime(11, 59)).toInstant(zone).toEpochMilliseconds(), prefs.getLong("CHECK_IN10", -1))
+        scheduler.schedule(plan, EatingWindow(date, morning, now + 4.hours), ReminderPreferences(checkInReminder = false), lateWake, false)
+        assertEquals(0L, prefs.getLong("CHECK_IN0", -1))
+        assertEquals(0L, prefs.getLong("CHECK_IN10", -1))
+    }
+
     @Test fun receiverPostsAndSnoozesAReminder() {
         org.junit.Assume.assumeTrue(android.os.Build.VERSION.SDK_INT < 33 ||
             androidx.core.content.ContextCompat.checkSelfPermission(context, android.Manifest.permission.POST_NOTIFICATIONS) == android.content.pm.PackageManager.PERMISSION_GRANTED)

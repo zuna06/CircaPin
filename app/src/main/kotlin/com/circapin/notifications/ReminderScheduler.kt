@@ -12,11 +12,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
-import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toInstant
-import kotlinx.datetime.toLocalDateTime
 
 @Singleton
 class ReminderScheduler @Inject constructor(private val context: Context) : PlanReminders {
@@ -25,7 +22,7 @@ class ReminderScheduler @Inject constructor(private val context: Context) : Plan
 
     private val scheduled by lazy { context.getSharedPreferences("scheduled_reminders", Context.MODE_PRIVATE) }
 
-    override fun schedule(plan: DailyPlan, eatingWindow: EatingWindow?, prefs: ReminderPreferences, wakeTime: Instant, checkedIn: Boolean) {
+    override fun schedule(plan: DailyPlan, eatingWindow: EatingWindow?, prefs: ReminderPreferences, nextWakeTime: Instant, checkedIn: Boolean) {
         update(ReminderType.LIGHT, plan.brightLight.start.takeIf { prefs.lightReminder })
         update(ReminderType.CAFFEINE, plan.caffeineCutoff.takeIf { prefs.caffeineReminder })
         update(ReminderType.BEDTIME, (plan.targetBedtime - BEDTIME_LEAD).takeIf { prefs.bedtimeReminder })
@@ -33,10 +30,11 @@ class ReminderScheduler @Inject constructor(private val context: Context) : Plan
         update(ReminderType.MEAL, eatingWindow?.lastMeal?.minus(MEAL_LEAD)?.takeIf { prefs.mealReminder })
         update(ReminderType.FIRST_MEAL, eatingWindow?.firstMeal?.takeIf { prefs.firstMealReminder })
         val tz = TimeZone.currentSystemDefault()
-        val wakeClock = (wakeTime + CHECK_IN_DELAY).toLocalDateTime(tz).time
-        update(ReminderType.CHECK_IN, LocalDateTime(plan.date, wakeClock).toInstant(tz).takeIf { prefs.checkInReminder && !checkedIn })
+        val todayWake = CheckInTiming.morningWake(eatingWindow, nextWakeTime)
+        update(ReminderType.CHECK_IN, CheckInTiming.target(plan.date, todayWake, tz).takeIf { prefs.checkInReminder && !checkedIn })
         val next = LocalDate.fromEpochDays(plan.date.toEpochDays() + 1)
-        update(ReminderType.CHECK_IN, LocalDateTime(next, wakeClock).toInstant(tz).takeIf { prefs.checkInReminder }, 10)
+        // Tomorrow's fallback uses the supplied wake after tonight's planned sleep.
+        update(ReminderType.CHECK_IN, CheckInTiming.target(next, nextWakeTime, tz).takeIf { prefs.checkInReminder }, 10)
     }
 
     private fun update(type: ReminderType, at: Instant?, slot: Int = 0) {
@@ -65,7 +63,8 @@ class ReminderScheduler @Inject constructor(private val context: Context) : Plan
     }
 
     fun snooze(type: ReminderType) {
-        scheduleOne(type, Instant.fromEpochMilliseconds(System.currentTimeMillis()) + SNOOZE_DURATION)
+        val at = Instant.fromEpochMilliseconds(System.currentTimeMillis()) + SNOOZE_DURATION
+        if (type != ReminderType.CHECK_IN || CheckInTiming.isOpen(at, TimeZone.currentSystemDefault())) scheduleOne(type, at)
     }
 
     private fun scheduleOne(type: ReminderType, at: Instant, slot: Int = 0) {
@@ -95,7 +94,6 @@ class ReminderScheduler @Inject constructor(private val context: Context) : Plan
         const val ACTION_SNOOZE = "com.circapin.SNOOZE"
         const val EXTRA_TYPE = "reminder_type"
         val BEDTIME_LEAD = 30.minutes
-        val CHECK_IN_DELAY = 15.minutes
         val MEAL_LEAD = 30.minutes
         val SNOOZE_DURATION = 30.minutes
     }

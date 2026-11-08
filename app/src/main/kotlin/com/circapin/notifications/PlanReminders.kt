@@ -7,5 +7,6 @@ import kotlin.time.Instant
 
 interface PlanReminders {
     fun cancelCheckInToday() {}
-    fun schedule(plan: DailyPlan, eatingWindow: EatingWindow?, prefs: ReminderPreferences, wakeTime: Instant, checkedIn: Boolean = false)
+    /** Today's wake is derived from eatingWindow; nextWakeTime is tomorrow's fallback after tonight's sleep. */
+    fun schedule(plan: DailyPlan, eatingWindow: EatingWindow?, prefs: ReminderPreferences, nextWakeTime: Instant, checkedIn: Boolean = false)
 }

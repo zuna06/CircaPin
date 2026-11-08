@@ -71,9 +71,9 @@ class TodayUpdater @Inject constructor(
             val plan = plans.getPlan(date)
             if (plan != null) {
                 val reminderPrefs = prefs.observeReminderPreferences().first()
-                val wakeTime = plan.targetBedtime + profile.sleepNeedHours.toDouble().hours
+                val nextWakeTime = plan.targetBedtime + profile.sleepNeedHours.toDouble().hours
                 val day = plans.observeDay(date).first()
-                reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, wakeTime, checkIns.get(date) != null)
+                reminderScheduler.schedule(plan, day?.eatingWindow, reminderPrefs, nextWakeTime, checkIns.get(date) != null)
             }
             }
         }.launchIn(scope)

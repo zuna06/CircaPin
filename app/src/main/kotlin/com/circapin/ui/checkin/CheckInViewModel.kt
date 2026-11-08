@@ -67,7 +67,7 @@ class CheckInViewModel @Inject constructor(
             val checkIn = checks.find { it.date == date }
             CheckInUiState(loading = false, alreadyCheckedIn = checkIn != null, todayCheckIn = checkIn,
                 model = model, forecast = day?.forecast, submitting = busy, error = failed, date = date,
-                available = now.toLocalDateTime(zone).hour in 4..11 && model != null && day?.forecast != null)
+                available = com.circapin.notifications.CheckInTiming.isOpen(now, zone) && model != null && day?.forecast != null)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CheckInUiState())
 
@@ -75,7 +75,7 @@ class CheckInViewModel @Inject constructor(
         val s = state.value
         val timeZone = timeZoneProvider.get()
         val date = RefreshTodayUseCase.planDate(clock.now(), timeZone)
-        if (s.date != date || clock.now().toLocalDateTime(timeZone).hour !in 4..11) return
+        if (s.date != date || !com.circapin.notifications.CheckInTiming.isOpen(clock.now(), timeZone)) return
         if (submitting || !s.available || s.alreadyCheckedIn || s.model == null || s.forecast == null) return
         submitting = true
         status.value = true

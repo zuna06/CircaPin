@@ -89,6 +89,6 @@ class FakeReminders : com.circapin.notifications.PlanReminders {
     var calls = 0
     var cancelled = false
     var preferences: com.circapin.domain.entities.ReminderPreferences? = null
-    override fun schedule(plan: DailyPlan, eatingWindow: EatingWindow?, prefs: com.circapin.domain.entities.ReminderPreferences, wakeTime: kotlin.time.Instant, checkedIn: Boolean) { calls++; preferences = prefs }
+    override fun schedule(plan: DailyPlan, eatingWindow: EatingWindow?, prefs: com.circapin.domain.entities.ReminderPreferences, nextWakeTime: kotlin.time.Instant, checkedIn: Boolean) { calls++; preferences = prefs }
     override fun cancelCheckInToday() { cancelled = true }
 }

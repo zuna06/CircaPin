@@ -18,6 +18,7 @@ class ReminderRestoreReceiver : BroadcastReceiver() {
                 "android.intent.action.TIMEZONE_CHANGED", "android.intent.action.MY_PACKAGE_REPLACED",
                 "android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED")) return
         scheduler.cancelAll()
+        DailyPlanWorker.enqueue(context, realign = true)
         WorkManager.getInstance(context).enqueue(OneTimeWorkRequestBuilder<DailyPlanWorker>().build())
     }
 }

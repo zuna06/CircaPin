@@ -31,6 +31,9 @@ class ReminderReceiver : BroadcastReceiver() {
             }
         }
 
+        // Inexact alarms and snoozes can be delivered after the morning window.
+        if (type == ReminderType.CHECK_IN && !CheckInTiming.isOpen(kotlin.time.Clock.System.now(), kotlinx.datetime.TimeZone.currentSystemDefault())) return
+
         ensureChannel(context, type)
         if (android.os.Build.VERSION.SDK_INT >= 33 &&
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) return
