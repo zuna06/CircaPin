@@ -54,14 +54,17 @@ class VisualVerificationTest {
         save("data-controls-dark-large-text")
     }
     @Test fun homeForecastDark() {
-        val now = Instant.parse("2026-11-10T09:00:00Z")
+        val now = Instant.parse("2026-11-10T13:00:00Z")
         val date = LocalDate(2026, 11, 10)
         val goal = ScheduleGoal(id = 1, targetWakeTime = LocalTime(7, 0), targetDate = LocalDate(2026, 11, 24), createdAt = now)
-        val plan = DailyPlan(date, 1, TimeWindow(now, now + 2.hours), TimeWindow(now + 11.hours, now + 14.hours), now + 6.hours, now + 14.hours, null)
+        val plan = DailyPlan(date, 1, TimeWindow(now, now + 2.hours), TimeWindow(now + 12.hours, now + 15.hours), now + 7.hours, now + 15.hours, null)
         val forecast = EnergyForecast(date, List(24) { hour -> (0.5 + 0.3 * kotlin.math.cos((hour - 16) * kotlin.math.PI / 12)).toFloat() })
         val state = HomeUiState(loading = false, goal = goal, goalStatus = GoalStatus.ACTIVE,
-            model = ModelState(now + 12.hours, 2f, 1f, 1f, now), day = DayPlan(plan, EatingWindow(date, now, now + 11.hours), forecast))
-        compose.setContent { Preview(true, 1f) { HomeScreen(state, now, {}) } }
+            model = ModelState(now + 13.hours, 2f, 1f, 1f, now), day = DayPlan(plan, EatingWindow(date, now, now + 12.5.hours), forecast))
+        val scale = androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("fontScale")?.toFloatOrNull() ?: 1f
+        compose.setContent { Preview(true, scale) { HomeScreen(state, now, {}) } }
+        compose.onNodeWithText("Next up", substring = true).performScrollTo().assertIsDisplayed()
+        save("home-overview-dark")
         compose.onNodeWithText("Energy forecast").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Show hourly values").performScrollTo().assertIsDisplayed()
         save("forecast-dark")

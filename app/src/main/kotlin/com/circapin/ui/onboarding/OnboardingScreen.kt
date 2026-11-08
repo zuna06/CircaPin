@@ -24,6 +24,13 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import com.circapin.ui.components.ScreenColumn
+import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.key
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,18 +85,14 @@ fun OnboardingScreen(
     onFinish: () -> Unit,
 ) {
     Surface(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .safeDrawingPadding()
-                .verticalScroll(rememberScrollState())
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            val result = state.result
-            if (result == null) {
-                QuestionStep(state, onSelectOption, onNext, onBack)
-            } else {
-                ConnectStep(result, state.healthConnectStatus, onConnect, onFinish)
+        key(state.questionIndex, state.result != null) {
+            ScreenColumn(Modifier.safeDrawingPadding(), maxWidth = 600.dp) {
+                val result = state.result
+                if (result == null) {
+                    QuestionStep(state, onSelectOption, onNext, onBack)
+                } else {
+                    ConnectStep(result, state.healthConnectStatus, onConnect, onFinish)
+                }
             }
         }
     }
@@ -103,6 +106,7 @@ private fun QuestionStep(
     onBack: () -> Unit,
 ) {
     val question = state.question
+    LinearProgressIndicator(progress = { (state.questionIndex + 1f) / ChronotypeQuestion.entries.size }, modifier = Modifier.fillMaxWidth().height(4.dp))
     Text(
         text = stringResource(
             R.string.onboarding_progress,
@@ -116,7 +120,7 @@ private fun QuestionStep(
         style = MaterialTheme.typography.headlineSmall,
         modifier = Modifier.semantics { heading() },
     )
-    Column(Modifier.selectableGroup()) {
+    Column(Modifier.selectableGroup(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         stringArrayResource(question.optionsRes).forEachIndexed { index, option ->
             val selected = state.selectedOption == index
             Row(
@@ -124,7 +128,10 @@ private fun QuestionStep(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 48.dp)
-                    .selectable(selected = selected, role = Role.RadioButton, onClick = { onSelectOption(index) }),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerLow)
+                    .selectable(selected = selected, role = Role.RadioButton, onClick = { onSelectOption(index) })
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
             ) {
                 RadioButton(selected = selected, onClick = null)
                 Spacer(Modifier.width(12.dp))

@@ -1,5 +1,7 @@
 package com.circapin.ui.sleeplog
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -20,6 +22,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.*
@@ -69,7 +73,7 @@ fun SleepLogScreen(
     var deleting by remember { mutableStateOf<SleepRecord?>(null) }
     deleting?.let { record ->
         AlertDialog(onDismissRequest = { deleting = null }, title = { Text(stringResource(R.string.delete_sleep)) },
-            text = { Text(stringResource(R.string.delete_sleep_warning)) },
+            text = { Text(stringResource(R.string.delete_sleep_warning), modifier = Modifier.verticalScroll(rememberScrollState())) },
             confirmButton = { TextButton(onClick = { deleting = null; onDelete(record) }) { Text(stringResource(R.string.delete_sleep)) } },
             dismissButton = { TextButton(onClick = { deleting = null }) { Text(stringResource(android.R.string.cancel)) } })
     }
@@ -85,9 +89,11 @@ fun SleepLogScreen(
             )
         },
         bottomBar = {
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
+                    .widthIn(max = 840.dp)
                     .fillMaxWidth()
                     .navigationBarsPadding()
                     .padding(16.dp),
@@ -99,13 +105,11 @@ fun SleepLogScreen(
                     Text(stringResource(R.string.action_log_nap))
                 }
             }
+            }
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-        ) {
+        Box(Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.TopCenter) {
+        Column(Modifier.widthIn(max = 840.dp).fillMaxSize()) {
             SyncBanner(state.syncStatus, onConnect)
             val records = state.records
             when {
@@ -122,6 +126,7 @@ fun SleepLogScreen(
                     }
                 }
             }
+        }
         }
     }
 }

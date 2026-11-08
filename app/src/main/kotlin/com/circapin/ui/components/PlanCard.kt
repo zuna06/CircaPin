@@ -10,6 +10,10 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,19 +57,21 @@ fun PlanCard(plan: DailyPlan, eatingWindow: EatingWindow?, modifier: Modifier = 
 @Composable
 private fun PlanRow(label: String, value: String, emphasised: Boolean = false) {
     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-    Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .semantics(mergeDescendants = true) {},
-    ) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.fillMaxWidth())
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = if (emphasised) FontWeight.Bold else null,
-        )
+    val scale = LocalDensity.current.fontScale
+    BoxWithConstraints(Modifier.fillMaxWidth().padding(vertical = 10.dp).semantics(mergeDescendants = true) {}) {
+        val valueStyle = if (emphasised) MaterialTheme.typography.titleMedium else MaterialTheme.typography.bodyMedium
+        if (maxWidth >= 300.dp && scale <= 1.2f) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(0.42f), color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(16.dp))
+                Text(value, style = valueStyle, fontWeight = if (emphasised) FontWeight.SemiBold else null, modifier = Modifier.weight(0.58f))
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(value, style = valueStyle, fontWeight = if (emphasised) FontWeight.SemiBold else null)
+            }
+        }
     }
 }
 

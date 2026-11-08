@@ -58,7 +58,15 @@ class MvpFlowTest {
             assertNotNull(database.dailyPlanDao().get(date))
             ActivityScenario.launch(MainActivity::class.java).use {
                 compose.waitUntil(30_000) { compose.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty() }
+                if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("captureNavigation") == "true") {
+                    compose.waitUntil(30_000) { compose.onAllNodesWithText("Today’s plan").fetchSemanticsNodes().isNotEmpty() || compose.onAllNodesWithText("Today's plan").fetchSemanticsNodes().isNotEmpty() }
+                    capture(context, "navigation-home")
+                }
                 compose.onNodeWithText("Settings").performClick()
+                if (androidx.test.platform.app.InstrumentationRegistry.getArguments().getString("captureNavigation") == "true") {
+                    compose.waitUntil(30_000) { compose.onAllNodesWithText("Reminders").fetchSemanticsNodes().isNotEmpty() }
+                    capture(context, "navigation-settings")
+                }
                 compose.onNodeWithText("Delete all data").performScrollTo().performClick()
                 compose.onAllNodesWithText("Delete all data")[2].performClick()
                 compose.waitUntil(30_000) {
@@ -72,4 +80,12 @@ class MvpFlowTest {
             }
         } finally { database.close(); app.startUpdates() }
     }
+    private fun capture(context: Context, name: String) {
+        compose.waitForIdle()
+        android.os.SystemClock.sleep(500)
+        val bitmap = requireNotNull(androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().uiAutomation.takeScreenshot())
+        val directory = java.io.File(context.getExternalFilesDir(null), "verification").apply { mkdirs() }
+        java.io.File(directory, "$name.png").outputStream().use { bitmap.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
 }

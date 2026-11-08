@@ -1,5 +1,10 @@
 package com.circapin.ui.settings
 
+import com.circapin.ui.components.ScreenColumn
+import com.circapin.ui.components.SectionCard
+import com.circapin.ui.components.AdaptivePair
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import android.content.Intent
 import android.net.Uri
 import android.Manifest
@@ -81,109 +86,89 @@ fun SettingsRoute(onReset: () -> Unit = {}, viewModel: SettingsViewModel = hiltV
         }, onExport = viewModel::export, onDeleteAll = { viewModel.deleteAll() })
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(state: SettingsUiState, onPrefsChange: (ReminderPreferences) -> Unit,
     onBackground: () -> Unit = {}, onNotifications: () -> Unit = {}, onExport: (Boolean) -> Unit = {}, onDeleteAll: () -> Unit = {}) {
     val context = LocalContext.current
     var confirmDelete by remember { mutableStateOf(false) }
     if (confirmDelete) AlertDialog(onDismissRequest = { confirmDelete = false }, title = { Text(stringResource(R.string.delete_all)) },
-        text = { Text(stringResource(R.string.delete_all_warning)) },
+        text = { Text(stringResource(R.string.delete_all_warning), modifier = Modifier.verticalScroll(rememberScrollState())) },
         confirmButton = { TextButton(onClick = { confirmDelete = false; onDeleteAll() }) { Text(stringResource(R.string.delete_all)) } },
         dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text(stringResource(android.R.string.cancel)) } })
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.settings_title)) }) }) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
-            Text(
-                text = stringResource(R.string.settings_reminders_section),
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.semantics { heading() }.padding(bottom = 8.dp),
-            )
-            SwitchRow(
-                label = stringResource(R.string.settings_light_reminder),
-                enabled = !state.busy,
-                checked = state.prefs.lightReminder,
-                onCheckedChange = { onPrefsChange(state.prefs.copy(lightReminder = it)) },
-            )
-            SwitchRow(
-                label = stringResource(R.string.settings_caffeine_reminder),
-                enabled = !state.busy,
-                checked = state.prefs.caffeineReminder,
-                onCheckedChange = { onPrefsChange(state.prefs.copy(caffeineReminder = it)) },
-            )
-            SwitchRow(
-                label = stringResource(R.string.settings_bedtime_reminder),
-                enabled = !state.busy,
-                checked = state.prefs.bedtimeReminder,
-                onCheckedChange = { onPrefsChange(state.prefs.copy(bedtimeReminder = it)) },
-            )
-            SwitchRow(
-                label = stringResource(R.string.settings_checkin_reminder),
-                enabled = !state.busy,
-                checked = state.prefs.checkInReminder,
-                onCheckedChange = { onPrefsChange(state.prefs.copy(checkInReminder = it)) },
-            )
-            SwitchRow(
-                label = stringResource(R.string.settings_meal_reminder),
-                enabled = !state.busy,
-                checked = state.prefs.mealReminder,
-                onCheckedChange = { onPrefsChange(state.prefs.copy(mealReminder = it)) },
-            )
-
-            SwitchRow(stringResource(R.string.settings_first_meal), state.prefs.firstMealReminder, enabled = !state.busy) { onPrefsChange(state.prefs.copy(firstMealReminder = it)) }
-            SwitchRow(stringResource(R.string.settings_dim), state.prefs.dimReminder, enabled = !state.busy) { onPrefsChange(state.prefs.copy(dimReminder = it)) }
-            Text(stringResource(R.string.permissions_title), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.permissions_explanation))
-            Button(onClick = onNotifications) { Text(stringResource(if (state.permissions.notifications) R.string.notifications_manage else R.string.notifications_enable)) }
-            Text(stringResource(R.string.settings_background_sync_summary))
-            Button(onClick = onBackground, enabled = state.permissions.backgroundAvailable) {
-                Text(stringResource(if (state.permissions.background) R.string.settings_background_sync_granted else if (state.permissions.backgroundAvailable) R.string.background_enable else R.string.background_unavailable))
-            }
-            Text(stringResource(R.string.usage_explanation))
-            Button(onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setData(Uri.parse("package:${context.packageName}"))) }) {
-                Text(stringResource(if (state.permissions.usage) R.string.usage_manage else R.string.usage_enable))
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).setData(Uri.parse("package:${context.packageName}")))
-                        }
-                        .padding(vertical = 12.dp),
-                ) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Text(stringResource(R.string.settings_exact_alarms))
-                        Text(
-                            text = stringResource(R.string.settings_exact_alarms_summary),
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+        ScreenColumn(Modifier.padding(padding), maxWidth = 1120.dp) {
+            AdaptivePair(first = {
+                SectionCard(stringResource(R.string.settings_reminders_section)) {
+                    Column {
+                    SwitchRow(stringResource(R.string.settings_light_reminder), state.prefs.lightReminder, !state.busy) { onPrefsChange(state.prefs.copy(lightReminder = it)) }
+                    HorizontalDivider()
+                    SwitchRow(stringResource(R.string.settings_dim), state.prefs.dimReminder, !state.busy) { onPrefsChange(state.prefs.copy(dimReminder = it)) }
+                    HorizontalDivider()
+                    SwitchRow(stringResource(R.string.settings_caffeine_reminder), state.prefs.caffeineReminder, !state.busy) { onPrefsChange(state.prefs.copy(caffeineReminder = it)) }
+                    HorizontalDivider()
+                    SwitchRow(stringResource(R.string.settings_bedtime_reminder), state.prefs.bedtimeReminder, !state.busy) { onPrefsChange(state.prefs.copy(bedtimeReminder = it)) }
+                    HorizontalDivider()
+                    SwitchRow(stringResource(R.string.settings_checkin_reminder), state.prefs.checkInReminder, !state.busy) { onPrefsChange(state.prefs.copy(checkInReminder = it)) }
+                    HorizontalDivider()
+                    SwitchRow(stringResource(R.string.settings_first_meal), state.prefs.firstMealReminder, !state.busy) { onPrefsChange(state.prefs.copy(firstMealReminder = it)) }
+                    HorizontalDivider()
+                    SwitchRow(stringResource(R.string.settings_meal_reminder), state.prefs.mealReminder, !state.busy) { onPrefsChange(state.prefs.copy(mealReminder = it)) }
                     }
-                    Text(
-                        text = stringResource(
-                            if (state.exactAlarmsGranted) R.string.settings_exact_alarms_granted
-                            else R.string.settings_exact_alarms_denied,
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = if (state.exactAlarmsGranted) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.error,
-                    )
                 }
-            }
-            Text(stringResource(R.string.data_controls), style = MaterialTheme.typography.titleMedium)
-            Text(stringResource(R.string.export_explanation))
-            Button(onClick = { onExport(false) }, enabled = !state.busy) { Text(stringResource(R.string.export_json)) }
-            Button(onClick = { onExport(true) }, enabled = !state.busy) { Text(stringResource(R.string.export_csv)) }
-            OutlinedButton(onClick = { confirmDelete = true }, enabled = !state.busy) { Text(stringResource(R.string.delete_all)) }
-            if (state.busy) CircularProgressIndicator()
+            }, second = {
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    SectionCard(stringResource(R.string.permissions_title), stringResource(R.string.permissions_explanation)) {
+                        PermissionSetting(stringResource(R.string.ui_notifications), null) {
+                            OutlinedButton(onClick = onNotifications) { Text(stringResource(if (state.permissions.notifications) R.string.notifications_manage else R.string.notifications_enable)) }
+                        }
+                        HorizontalDivider()
+                        PermissionSetting(stringResource(R.string.settings_background_sync), stringResource(R.string.settings_background_sync_summary)) {
+                            OutlinedButton(onClick = onBackground, enabled = state.permissions.backgroundAvailable && !state.busy) {
+                                Text(stringResource(if (state.permissions.background) R.string.settings_background_sync_granted else if (state.permissions.backgroundAvailable) R.string.background_enable else R.string.background_unavailable))
+                            }
+                        }
+                        HorizontalDivider()
+                        PermissionSetting(stringResource(R.string.ui_screen_time), stringResource(R.string.usage_explanation)) {
+                            OutlinedButton(onClick = { context.startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).setData(Uri.parse("package:${context.packageName}"))) }) {
+                                Text(stringResource(if (state.permissions.usage) R.string.usage_manage else R.string.usage_enable))
+                            }
+                        }
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            HorizontalDivider()
+                            Column(Modifier.fillMaxWidth().clickable {
+                                context.startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM).setData(Uri.parse("package:${context.packageName}")))
+                            }.padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(stringResource(R.string.settings_exact_alarms), style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(R.string.settings_exact_alarms_summary), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(stringResource(if (state.exactAlarmsGranted) R.string.settings_exact_alarms_granted else R.string.settings_exact_alarms_denied),
+                                    style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                    }
+                    SectionCard(stringResource(R.string.data_controls), stringResource(R.string.export_explanation)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            OutlinedButton(onClick = { onExport(false) }, enabled = !state.busy) { Text(stringResource(R.string.export_json)) }
+                            OutlinedButton(onClick = { onExport(true) }, enabled = !state.busy) { Text(stringResource(R.string.export_csv)) }
+                        }
+                        HorizontalDivider()
+                        TextButton(onClick = { confirmDelete = true }, enabled = !state.busy,
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.delete_all)) }
+                    }
+                }
+            })
+            if (state.busy) LinearProgressIndicator(Modifier.fillMaxWidth())
             if (state.error) Text(stringResource(R.string.operation_failed), color = MaterialTheme.colorScheme.error)
         }
+    }
+}
+
+@Composable
+private fun PermissionSetting(title: String, summary: String?, action: @Composable () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, style = MaterialTheme.typography.titleSmall)
+        summary?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        action()
     }
 }
 
@@ -196,7 +181,7 @@ private fun SwitchRow(label: String, checked: Boolean, enabled: Boolean = true, 
             .fillMaxWidth()
             .heightIn(min = 48.dp)
             .toggleable(value = checked, enabled = enabled, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp),
     ) {
         Text(label, modifier = Modifier.weight(1f))
         Switch(checked = checked, enabled = enabled, onCheckedChange = null)

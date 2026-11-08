@@ -17,6 +17,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import com.circapin.ui.components.ScreenColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -87,18 +88,12 @@ fun GoalSetupScreen(
             )
         },
     ) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
+        ScreenColumn(Modifier.padding(padding), maxWidth = 600.dp) {
             Text(stringResource(R.string.goal_intro), style = MaterialTheme.typography.bodyLarge)
 
             Text(wakeLabel, style = MaterialTheme.typography.titleMedium)
             OutlinedButton(onClick = { pickingTime = true }, modifier = Modifier.fillMaxWidth()) {
-                Text(state.form.wakeTime.formatted())
+                Text(state.form.wakeTime.formatted(), style = MaterialTheme.typography.headlineSmall)
             }
 
             Text(stringResource(R.string.goal_date_label), style = MaterialTheme.typography.titleMedium)

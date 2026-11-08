@@ -15,6 +15,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import com.circapin.ui.components.ScreenColumn
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -40,17 +42,11 @@ fun ProgressRoute(viewModel: ProgressViewModel = hiltViewModel()) {
 @Composable
 fun ProgressScreen(state: ProgressUiState) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.progress_title)) }) }) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
-            if (state.loading) return@Column
+        ScreenColumn(Modifier.padding(padding)) {
+            if (state.loading) return@ScreenColumn
             if (state.goal == null) {
                 Text(stringResource(R.string.progress_empty))
-                return@Column
+                return@ScreenColumn
             }
 
             ShiftCard(state)
@@ -89,21 +85,28 @@ private fun ShiftCard(state: ProgressUiState) {
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                Column {
-                    Text(stringResource(R.string.progress_start_label), style = MaterialTheme.typography.labelSmall)
-                    Text(state.startDlmo?.formatted() ?: "—")
+            if (LocalDensity.current.fontScale <= 1.3f) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PhaseValue(stringResource(R.string.progress_start_label), state.startDlmo?.formatted(), Modifier.weight(1f))
+                    PhaseValue(stringResource(R.string.progress_current_label), state.currentDlmo?.formatted(), Modifier.weight(1f))
+                    PhaseValue(stringResource(R.string.progress_target_label), state.targetDlmo?.formatted(), Modifier.weight(1f))
                 }
-                Column {
-                    Text(stringResource(R.string.progress_current_label), style = MaterialTheme.typography.labelSmall)
-                    Text(state.currentDlmo?.formatted() ?: "—")
-                }
-                Column {
-                    Text(stringResource(R.string.progress_target_label), style = MaterialTheme.typography.labelSmall)
-                    Text(state.targetDlmo?.formatted() ?: "—")
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PhaseValue(stringResource(R.string.progress_start_label), state.startDlmo?.formatted())
+                    PhaseValue(stringResource(R.string.progress_current_label), state.currentDlmo?.formatted())
+                    PhaseValue(stringResource(R.string.progress_target_label), state.targetDlmo?.formatted())
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PhaseValue(label: String, value: String?, modifier: Modifier = Modifier) {
+    Column(modifier.semantics(mergeDescendants = true) {}, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value ?: "—", style = MaterialTheme.typography.titleMedium)
     }
 }
 

@@ -256,12 +256,12 @@
     <string name="settings_first_meal">First meal</string>
     <string name="settings_dim">Screen dimming</string>
     <string name="permissions_title">Permissions</string>
-    <string name="permissions_explanation">Reminders are optional. You can use CircaPin with manual sleep entries and without notifications or background access.</string>
+    <string name="permissions_explanation">Optional permissions. Manual sleep logging always works.</string>
     <string name="notifications_manage">Manage notifications</string>
     <string name="notifications_enable">Enable notifications</string>
     <string name="background_enable">Enable background sleep sync</string>
     <string name="background_unavailable">Background access unavailable on this device</string>
-    <string name="usage_explanation">Optional screen-time access measures when your screen is on and suggests winding down after 30 minutes of use past dimming time. App names and usage events are never stored. Background nudges may be delayed by Android.</string>
+    <string name="usage_explanation">Optional: track daily screen time and get a wind-down nudge after 30 minutes past dimming. Only totals are saved; Android may delay background nudges.</string>
     <string name="usage_enable">Enable screen-time access</string>
     <string name="usage_manage">Manage screen-time access</string>
     <string name="channel_dim">Screen dimming</string>
@@ -273,6 +273,12 @@
     <string name="progress_target_date">Target date: %1$s</string>
     <string name="checkin_unavailable">Check in between 4 AM and noon, after your daily forecast is ready. You can continue using the rest of the app.</string>
     <string name="forecast_sleep_note">Shading marks estimated sleep hours. Dots show hourly predictions; values during sleep describe alertness if awake.</string>
-    <string name="screen_time_summary">Screen time today: %1$d min � After dimming: %2$d min</string>
+    <string name="screen_time_summary">Screen time today: %1$d min · After dimming: %2$d min</string>
     <string name="onboarding_optional">After setup, Settings explains optional notifications, background sleep sync and screen-time access. You can skip every permission and log sleep manually.</string>
+    <string name="ui_next_up">Next up · %1$s</string>
+    <string name="ui_check_in">Check in</string>
+    <string name="ui_first_meal">First meal</string>
+    <string name="ui_last_meal">Last meal</string>
+    <string name="ui_screen_time">Screen time</string>
+    <string name="ui_notifications">Notifications</string>
 </resources>

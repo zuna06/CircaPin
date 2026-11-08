@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import com.circapin.ui.components.ScreenColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -47,14 +48,8 @@ fun CheckInRoute(onDone: () -> Unit, viewModel: CheckInViewModel = hiltViewModel
 @Composable
 fun CheckInScreen(state: CheckInUiState, onSubmit: (Int) -> Unit, onDone: () -> Unit) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.checkin_title)) }) }) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
-            if (state.loading) return@Column
+        ScreenColumn(Modifier.padding(padding), maxWidth = 600.dp) {
+            if (state.loading) return@ScreenColumn
 
             if (state.alreadyCheckedIn) {
                 CheckedInCard(state)

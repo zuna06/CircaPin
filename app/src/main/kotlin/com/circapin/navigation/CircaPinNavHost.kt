@@ -2,6 +2,13 @@ package com.circapin.navigation
 
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.NavigationRail
+import androidx.compose.material3.NavigationRailItem
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
@@ -87,18 +94,30 @@ fun CircaPinNavHost(openCheckIn: Boolean = false, onDeepLinkHandled: () -> Unit 
         }
     }
 
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val useRail = maxWidth >= 840.dp && LocalDensity.current.fontScale <= 1.4f
+    val showNavigation = Tab.entries.any { it.route == currentRoute }
     Scaffold(
         contentWindowInsets = WindowInsets(0),
         bottomBar = {
-            if (Tab.entries.any { it.route == currentRoute }) BottomBar(navController, currentRoute)
+            if (showNavigation && !useRail) BottomBar(navController, currentRoute)
         },
     ) { padding ->
+        Row(Modifier.padding(padding).consumeWindowInsets(padding)) {
+        if (showNavigation && useRail) {
+            NavigationRail {
+                Tab.entries.forEach { tab ->
+                    NavigationRailItem(selected = currentRoute == tab.route,
+                        onClick = { navController.openTab(tab) },
+                        icon = { Icon(painterResource(tab.icon), contentDescription = null) },
+                        label = { Text(stringResource(tab.label)) })
+                }
+            }
+        }
         NavHost(
             navController = navController,
             startDestination = start,
-            modifier = Modifier
-                .padding(padding)
-                .consumeWindowInsets(padding),
+            modifier = Modifier.weight(1f),
         ) {
             composable(ONBOARDING_ROUTE) {
                 OnboardingRoute(onFinished = { navController.navigate(FIRST_GOAL_ROUTE) { popUpTo(ONBOARDING_ROUTE) { inclusive = true } } })
@@ -134,6 +153,8 @@ fun CircaPinNavHost(openCheckIn: Boolean = false, onDeepLinkHandled: () -> Unit 
                 SleepEntryRoute(onDone = { navController.popBackStack() })
             }
         }
+        }
+    }
     }
 }
 
@@ -143,16 +164,18 @@ private fun BottomBar(navController: NavHostController, currentRoute: String?) {
         Tab.entries.forEach { tab ->
             NavigationBarItem(
                 selected = currentRoute == tab.route,
-                onClick = {
-                    navController.navigate(tab.route) {
-                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
+                onClick = { navController.openTab(tab) },
                 icon = { Icon(painterResource(tab.icon), contentDescription = null) },
                 label = { Text(stringResource(tab.label)) },
             )
         }
+    }
+}
+
+private fun NavHostController.openTab(tab: Tab) {
+    navigate(tab.route) {
+        popUpTo(graph.findStartDestination().id) { saveState = true }
+        launchSingleTop = true
+        restoreState = true
     }
 }

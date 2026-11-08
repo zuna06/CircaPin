@@ -18,6 +18,11 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.animation.animateContentSize
+import com.circapin.ui.components.ScreenColumn
+import com.circapin.ui.components.AdaptivePair
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import com.circapin.screentime.ScreenTimeTracker
@@ -85,14 +90,11 @@ fun HomeRoute(
 @Composable
 fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgress: () -> Unit = {}, onCheckIn: () -> Unit = {}, screenMinutes: Int? = null, afterDimming: Int? = null) {
     Scaffold(topBar = { TopAppBar(title = { Text(stringResource(R.string.nav_today)) }) }) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
-            if (state.loading) return@Column
+        ScreenColumn(Modifier.padding(padding), maxWidth = 1120.dp) {
+            if (state.loading) {
+                CircularProgressIndicator()
+                return@ScreenColumn
+            }
 
             if (state.todayCheckIn == null && state.model != null && state.day?.forecast != null && now.toLocalDateTime(TimeZone.currentSystemDefault()).hour in 4..11) {
                 CheckInPromptCard(onCheckIn)
@@ -111,17 +113,22 @@ fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgr
                 GoalCard(goal, state.progress, onEditGoal, onProgress)
             }
             state.progress?.let { ShortfallCard(it, goal) }
-            state.model?.let { BodyClockCard(it, state.progress, now) }
-            state.score?.let { ScoreCard(it) }
             val day = state.day
-            when {
-                day != null -> PlanCard(day.plan, day.eatingWindow)
-                goal != null -> Text(stringResource(R.string.plan_preparing))
-            }
-            day?.forecast?.let { forecast ->
-                val onset = state.model?.estimatedDlmo?.plus(2.hours)?.toLocalDateTime(TimeZone.currentSystemDefault())?.hour
-                val sleepHours = onset?.let { start -> (0 until kotlin.math.ceil(state.sleepNeedHours.toDouble()).toInt()).map { (start + it) % 24 }.toSet() }.orEmpty()
-                ForecastCard(forecast, sleepHours)
+            if (day != null) {
+                NextActionCard(day.plan, day.eatingWindow, now)
+                AdaptivePair(first = { PlanCard(day.plan, day.eatingWindow) }, second = {
+                    day.forecast?.let { forecast ->
+                        val onset = state.model?.estimatedDlmo?.plus(2.hours)?.toLocalDateTime(TimeZone.currentSystemDefault())?.hour
+                        val sleepHours = onset?.let { start -> (0 until kotlin.math.ceil(state.sleepNeedHours.toDouble()).toInt()).map { (start + it) % 24 }.toSet() }.orEmpty()
+                        ForecastCard(forecast, sleepHours)
+                    }
+                })
+            } else if (goal != null) Text(stringResource(R.string.plan_preparing))
+            if (state.model != null && state.score != null) {
+                AdaptivePair(first = { BodyClockCard(state.model, state.progress, now) }, second = { ScoreCard(state.score) })
+            } else {
+                state.model?.let { BodyClockCard(it, state.progress, now) }
+                state.score?.let { ScoreCard(it) }
             }
             screenMinutes?.let { Text(stringResource(R.string.screen_time_summary, it, afterDimming ?: 0)) }
             if (state.goalStatus != GoalStatus.ACTIVE && state.goal != null) TextButton(onClick = onProgress) { Text(stringResource(R.string.progress_title)) }
@@ -144,32 +151,39 @@ private fun NoGoalCard(onEditGoal: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GoalCard(goal: ScheduleGoal, progress: GoalProgress?, onEditGoal: () -> Unit, onProgress: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(modifier = Modifier
-                    .fillMaxWidth()
-                    .semantics(mergeDescendants = true) {}) {
-                    Text(
-                        text = stringResource(R.string.home_goal, goal.targetWakeTime.formatted(), goal.targetDate.formatted()),
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                    progress?.let {
-                        Text(
-                            text = if (it.nightsLeft > 0) {
-                                stringResource(R.string.home_nights_left, pluralStringResource(R.plurals.nights, it.nightsLeft, it.nightsLeft))
-                            } else {
-                                stringResource(R.string.home_goal_date_reached)
-                            },
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-                }
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer), modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.home_goal, goal.targetWakeTime.formatted(), goal.targetDate.formatted()), style = MaterialTheme.typography.titleMedium)
+            progress?.let {
+                Text(if (it.nightsLeft > 0) stringResource(R.string.home_nights_left, pluralStringResource(R.plurals.nights, it.nightsLeft, it.nightsLeft))
+                    else stringResource(R.string.home_goal_date_reached), style = MaterialTheme.typography.bodySmall)
+            }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                TextButton(onClick = onProgress) { Text(stringResource(R.string.progress_title)) }
                 TextButton(onClick = onEditGoal) { Text(stringResource(R.string.action_change_goal)) }
             }
-            TextButton(onClick = onProgress) { Text(stringResource(R.string.progress_title)) }
+        }
+    }
+}
+
+@Composable
+private fun NextActionCard(plan: com.circapin.domain.entities.DailyPlan, meals: com.circapin.domain.entities.EatingWindow?, now: Instant) {
+    val actions = buildList {
+        add(R.string.plan_bright_light to plan.brightLight.start)
+        add(R.string.plan_avoid_light to plan.avoidLight.start)
+        add(R.string.plan_caffeine to plan.caffeineCutoff)
+        add(R.string.plan_bedtime to plan.targetBedtime)
+        meals?.let { add(R.string.ui_first_meal to it.firstMeal); add(R.string.ui_last_meal to it.lastMeal) }
+        plan.nap?.let { add(R.string.plan_nap to it.window.start) }
+    }
+    val next = actions.filter { it.second >= now }.minByOrNull { it.second } ?: return
+    Card(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(stringResource(R.string.ui_next_up, stringResource(next.first)), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Text(next.second.formattedTime(), style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
@@ -189,7 +203,7 @@ private fun CheckInPromptCard(onCheckIn: () -> Unit) {
                 Text(stringResource(R.string.checkin_title), style = MaterialTheme.typography.titleMedium)
                 Text(stringResource(R.string.checkin_question), style = MaterialTheme.typography.bodyMedium)
             }
-            Button(onClick = onCheckIn) { Text(stringResource(R.string.action_ok)) }
+            TextButton(onClick = onCheckIn) { Text(stringResource(R.string.ui_check_in)) }
         }
     }
 }
@@ -314,7 +328,7 @@ private fun ScoreCard(score: SleepScore) {
                 .semantics(mergeDescendants = true) { contentDescription = description },
         ) {
             Text(score.overall.toString(), style = MaterialTheme.typography.displaySmall)
-            Column {
+            Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.score_title), style = MaterialTheme.typography.titleMedium)
                 Text(label)
             }

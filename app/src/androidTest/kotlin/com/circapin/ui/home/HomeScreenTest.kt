@@ -92,9 +92,9 @@ class HomeScreenTest {
     fun theBodyClockIsComparedWithTheGoal() {
         show(full())
 
-        compose.onNodeWithText("Your body clock is 3 h behind your goal.", useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("Right now your body thinks it's", substring = true, useUnmergedTree = true).assertIsDisplayed()
-        compose.onNodeWithText("3 nights left", useUnmergedTree = true).assertIsDisplayed()
+        compose.onNodeWithText("Your body clock is 3 h behind your goal.", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Right now your body thinks it's", substring = true, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("3 nights left", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -108,7 +108,7 @@ class HomeScreenTest {
     fun theScoreExplainsWhatHeldItBack() {
         show(full())
 
-        compose.onNodeWithContentDescription("Sleep score 74 out of 100. Good, but you went to bed 40 min late").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Sleep score 74 out of 100. Good, but you went to bed 40 min late").performScrollTo().assertIsDisplayed()
     }
 
     @Test

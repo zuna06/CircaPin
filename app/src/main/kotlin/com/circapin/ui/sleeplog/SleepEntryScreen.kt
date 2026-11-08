@@ -15,6 +15,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import com.circapin.ui.components.ScreenColumn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -77,13 +78,7 @@ fun SleepEntryScreen(
             )
         },
     ) { padding ->
-        Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-        ) {
+        ScreenColumn(Modifier.padding(padding), maxWidth = 600.dp) {
             DateTimeField(R.string.sleep_entry_onset, state.onsetDate, state.onsetTime, onOnsetDate, onOnsetTime)
             DateTimeField(R.string.sleep_entry_wake, state.wakeDate, state.wakeTime, onWakeDate, onWakeTime)
             state.problem?.let { problem ->
