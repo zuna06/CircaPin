@@ -25,3 +25,11 @@ Local evidence (ignored build outputs):
 - `build/device-visual-verification/`: captured screenshots. The dark large-text settings screen and dark forecast were visually inspected; no visible layout defects were found.
 
 These emulator checks do not establish physical-device battery behavior, OEM scheduling reliability or wearable compatibility. The DST/time-zone/delayed-run timing cases are covered by the JVM regression tests; this Android run verifies app and reminder integration on API 37.
+
+## WorkManager and sleep-debt follow-up — November 15, 2026
+
+- All 162 JVM tests passed: 117 domain, 38 app and 7 data. Six new regressions cover stage-adjusted debt, overlapping/duplicate records, recovery nights, naps, invalid stage fractions and local-noon grouping across spring/fall DST.
+- Five targeted API 37 instrumentation tests passed (`OK (5 tests)` in `build/verification-rollover-chain.txt`): three new chain tests plus the existing model performance and background-worker/reset checks. The full Android suite was not rerun for this change.
+- The chain tests use the real persistent WorkManager instance, Hilt worker and Room database. They accelerate only the initial wait using `updateWork`, keeping the production work ID, unique chain and rollover input. They verify one successor, idempotent startup, retrying the same work after an injected database write failure, and replacement/rescheduling through the restore receiver for clock/time-zone changes. Time-zone changes are process-local and restored during cleanup.
+- Model performance remained within the existing computation-budget assertion. Test APK compilation and `lintDebug` passed with zero lint errors.
+- CI configuration and physical-device testing were left unchanged.

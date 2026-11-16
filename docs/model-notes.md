@@ -11,3 +11,13 @@ CircaPin-specific choices remain provisional: free-night weighting, recency weig
 Automated validation covers synthetic phase histories, plan bounds, expected qualitative alertness patterns, feedback convergence on a constructed prediction error, and persistence through sync. These checks establish software behavior. They do not demonstrate 30-minute DLMO accuracy in people or establish that following a plan produces the predicted biological shift. That requires measured participant data.
 
 Friday and Saturday remain the MVP free nights. Sleep need remains an eight-hour default. Custom free nights and personalized sleep need were deferred in the phase writeups; they are not silently inferred from sparse sleep logs.
+
+## Sleep-debt refinement (November 14, 2026)
+
+Debt remains a 14-sleep-day estimate of logged duration shortfalls, with surplus sleep repaying existing debt but never creating a negative balance. Missing nights are not treated as zero sleep. This arithmetic is a tracking heuristic, not a validated model of biological recovery.
+
+When stage information is available, debt now uses the session's estimated asleep fraction, excluding reported awake time. An eight-hour session with 75% asleep contributes six hours, creating two hours of deficit against an eight-hour need. Naps and recovery nights use the same accounting. Without valid stage information, the session duration remains the fallback.
+
+Overlapping sessions are partitioned into non-overlapping intervals before estimating sleep. Known stage fractions take precedence over unstaged/manual duplicates. Where measured sources disagree, the highest known asleep fraction is used to avoid exaggerating debt; this is an explicit provisional conflict-resolution rule. Stage fractions describe the whole session, so this does not reconstruct exactly when awakenings happened. Phase estimation and sleep scoring retain their existing duration/timing inputs.
+
+Sleep days now change at local noon, including DST transition days. Subtracting a fixed twelve elapsed hours could previously move that boundary to 11 AM or 1 PM. No schema migration is required; the next model recomputation uses the revised estimate.

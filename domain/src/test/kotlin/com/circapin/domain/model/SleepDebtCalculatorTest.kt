@@ -9,6 +9,7 @@ import kotlin.time.Duration
 import kotlin.time.Duration.Companion.hours
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
+import kotlinx.datetime.toInstant
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -75,4 +76,45 @@ class SleepDebtCalculatorTest {
 
         assertEquals(2f, debt(records, start))
     }
+    @Test fun `awake stage time creates a deficit even in an eight hour session`() {
+        val record = night(start, LocalTime(23, 0), 8.hours).copy(qualityScore = 0.75f)
+        assertEquals(2f, debt(listOf(record), start))
+        assertEquals(2f, debt(listOf(record, record.copy(qualityScore = null)), start))
+    }
+
+    @Test fun `partially overlapping staged sessions are counted once and independent of order`() {
+        val a = night(start, LocalTime(23, 0), 6.hours).copy(qualityScore = 0.5f)
+        val b = a.copy(sleepOnset = a.sleepOnset + 2.hours, wakeTime = a.wakeTime + 2.hours, qualityScore = 0.75f)
+        // Two hours at 50 percent plus six hours at 75 percent = 5.5 asleep.
+        assertEquals(2.5f, debt(listOf(a, b), start))
+        assertEquals(2.5f, debt(listOf(b, a, a), start))
+    }
+
+    @Test fun `staged recovery sleep repays only actual estimated surplus`() {
+        val short = night(start, LocalTime(23, 0), 6.hours)
+        val recovery = night(start.plusDays(1), LocalTime(23, 0), 10.hours).copy(qualityScore = 0.8f)
+        assertEquals(2f, debt(listOf(short, recovery), start.plusDays(1)), 0.0001f)
+    }
+
+    @Test fun `invalid stage fractions fall back to unstaged duration`() {
+        for (share in listOf(Float.NaN, -0.5f, 1.5f)) {
+            assertEquals(0f, debt(listOf(night(start, LocalTime(23, 0)).copy(qualityScore = share)), start))
+        }
+    }
+
+    @Test fun `sleep day changes at local noon on DST transition days`() {
+        val zone = kotlinx.datetime.TimeZone.of("America/New_York")
+        for (day in listOf(LocalDate(2026, 3, 8), LocalDate(2026, 11, 1))) {
+            val before = kotlinx.datetime.LocalDateTime(day, LocalTime(11, 30))
+            assertEquals(day.plusDays(-1), SleepDays.sleepDayOf(before.toInstant(zone), zone))
+            assertEquals(day, SleepDays.sleepDayOf(kotlinx.datetime.LocalDateTime(day, LocalTime(12, 0)).toInstant(zone), zone))
+        }
+    }
+
+    @Test fun `nap recovery also excludes recorded awake time`() {
+        val short = night(start, LocalTime(23, 0), 6.hours)
+        val nap = night(start.plusDays(1), LocalTime(14, 0), 1.hours).copy(isNap = true, qualityScore = 0.5f)
+        assertEquals(1.5f, debt(listOf(short, nap), start.plusDays(1)))
+    }
+
 }
