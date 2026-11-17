@@ -21,7 +21,7 @@ On macOS/Linux use `bash gradlew` instead of `.\gradlew.bat`. The debug APK is w
 
 ## Run and verify
 
-Create an API 37 emulator or connect an Android device with USB debugging enabled. Complete the questionnaire and goal setup. Health Connect is optional: grant read-sleep access when offered, or use manual sleep entry. Older supported devices may require the Health Connect app. Real wearable validation requires another app supplying sleep sessions to Health Connect.
+Create an API 37 emulator or connect an Android device with USB debugging enabled. Complete the questionnaire and goal setup, including the sleep duration you want to protect each night (eight hours by default). The daily plan shows a bedtime range, full sleep/wake period, and breakfast, lunch and dinner windows. Recent main sleep records progressively tune the timing. Health Connect is optional: grant read-sleep access when offered, or use manual sleep entry. Older supported devices may require the Health Connect app. Real wearable validation requires another app supplying sleep sessions to Health Connect.
 
 Settings explains optional notification, exact-alarm, usage and background-health permissions. Grant notification access for notification delivery checks. Background Health Connect reads require supported background-health access; without it, background planning uses stored data.
 

@@ -7,6 +7,9 @@ import com.circapin.domain.entities.NapWindow
 import com.circapin.domain.entities.ScheduleGoal
 import com.circapin.domain.entities.SleepScore
 import com.circapin.domain.entities.TimeWindow
+import com.circapin.domain.entities.SleepRecord
+import com.circapin.domain.model.PersonalSleepTimingEstimator
+import com.circapin.domain.model.SleepDays
 import com.circapin.domain.entities.UserProfile
 import com.circapin.domain.model.CircadianModel
 import com.circapin.domain.model.CircularTime
@@ -18,6 +21,7 @@ import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 data class GeneratedDay(val plan: DailyPlan, val eatingWindow: EatingWindow, val progress: GoalProgress)
 
@@ -36,20 +40,39 @@ class GenerateDailyPlanUseCase {
         lastNightScore: SleepScore?,
         date: LocalDate,
         timeZone: TimeZone,
+        records: List<SleepRecord> = emptyList(),
     ): GeneratedDay {
+        require(profile.sleepNeedHours.isFinite() && profile.sleepNeedHours in 4f..12f)
         val dlmo = CircadianModel.dlmoClockTime(model, timeZone)
-        val progress = ShiftPlanner.progress(dlmo, goal, profile.sleepNeedHours, date)
+        val timing = PersonalSleepTimingEstimator.estimate(records.filter { it.wakeTime <= model.lastUpdated },
+            CircularTime.toLocalTime(CircularTime.minuteOfDay(dlmo) + 120), date, timeZone)
+        // Translate the observed behavioral bedtime into the planner's two-hour phase convention.
+        // This does not overwrite the physiological model with a sleep log.
+        val scheduleDlmo = CircularTime.toLocalTime(CircularTime.minuteOfDay(timing.onset) - 120)
         val lowScore = lastNightScore != null && lastNightScore.overall < LOW_SCORE
-        // A poor night makes shifting harder, so the plan eases off for a day (FR-11).
-        val step = if (lowScore) progress.dailyStepMinutes / 2 else progress.dailyStepMinutes
+        val baseCap = if (timing.nights < 3 || timing.irregular || model.confidence < 0.5f || model.sleepDebtHours >= NAP_DEBT_HOURS) 30 else null
+        var progress = ShiftPlanner.progress(scheduleDlmo, goal, profile.sleepNeedHours, date, baseCap)
+        // Recompute reachability at the reduced pace instead of displaying an optimistic deadline.
+        if (lowScore) progress = ShiftPlanner.progress(scheduleDlmo, goal, profile.sleepNeedHours, date,
+            maxOf(1, kotlin.math.abs(progress.dailyStepMinutes) / 2))
+        val step = progress.dailyStepMinutes
 
         val need = (profile.sleepNeedHours * 60).toDouble().minutes
         val dlmoMinutes = CircularTime.eveningMinutes(dlmo)
         val lastNightDlmo = CircularTime.onEvening(LocalDate.fromEpochDays(date.toEpochDays() - 1), dlmoMinutes, timeZone)
-        val wakeToday = lastNightDlmo + SLEEP_ONSET_AFTER_DLMO + need
+        val previous = LocalDate.fromEpochDays(date.toEpochDays() - 1)
+        val observedWake = SleepDays.from(records.filter { !it.isNap && it.wakeTime <= model.lastUpdated }, timeZone)
+            .lastOrNull { it.date == previous }?.main?.wake
+            ?.takeIf { it.toLocalDateTime(timeZone).date == date }
+        val habitualOnset = CircularTime.onEvening(previous, CircularTime.eveningMinutes(timing.onset), timeZone)
+        val wakeToday = observedWake ?: (habitualOnset + need)
         val temperatureMinimum = lastNightDlmo + TEMPERATURE_MINIMUM_AFTER_DLMO
-        val tonightDlmo = CircularTime.onEvening(date, dlmoMinutes - step, timeZone)
-        val bedtime = tonightDlmo + SLEEP_ONSET_AFTER_DLMO
+        val tonightDlmo = CircularTime.onEvening(date, CircularTime.eveningMinutes(scheduleDlmo) - step, timeZone)
+        val scheduledBedtime = tonightDlmo + SLEEP_ONSET_AFTER_DLMO
+        // A very late recorded wake must not leave meals overlapping sleep. Keep at least an
+        // eight-hour waking interval as a planning guard, not an estimate of biological sleepiness.
+        val bedtime = maxOf(scheduledBedtime, wakeToday + 8.hours)
+        val lateWakeAdjustment = bedtime > scheduledBedtime
 
         // Morning light only helps after the temperature minimum; before it, light moves the clock later.
         val morningLight = maxOf(temperatureMinimum, wakeToday)
@@ -67,6 +90,11 @@ class GenerateDailyPlanUseCase {
             caffeineCutoff = bedtime - CAFFEINE_CUTOFF_BEFORE_BED,
             targetBedtime = bedtime,
             nap = napWindow(model.sleepDebtHours, lowScore, wakeToday, bedtime),
+            targetWakeTime = bedtime + need,
+            personalizationNights = timing.nights,
+            plannedShiftMinutes = if (lateWakeAdjustment) 0 else step,
+            shortfallMinutes = progress.shortfallMinutes,
+            lateWakeAdjustment = lateWakeAdjustment,
         )
         val eating = EatingWindow(
             date = date,

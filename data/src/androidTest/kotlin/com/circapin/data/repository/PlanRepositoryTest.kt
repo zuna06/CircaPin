@@ -65,6 +65,9 @@ class PlanRepositoryTest {
         caffeineCutoff = now + 6.hours,
         targetBedtime = now + 14.hours,
         nap = nap,
+        targetWakeTime = now + 22.hours,
+        personalizationNights = 5,
+        plannedShiftMinutes = 20,
     )
 
     @Test

@@ -45,7 +45,7 @@ class RefreshTodayUseCase(
 
         if (model == null || goal == null) return
         val existing = plans.getPlan(date)
-        if (existing != null && existing.goalId == goal.id) {
+        if (existing != null && existing.goalId == goal.id && existing.targetWakeTime != null) {
             // Action times stay fixed, but the forecast reflects late sleep and feedback.
             plans.saveForecast(computeForecast(existing, model, records, profile.sleepNeedHours, timeZone))
             return
@@ -54,7 +54,7 @@ class RefreshTodayUseCase(
         if (model.lastUpdated < LocalDateTime(date, LocalTime(DAY_START_HOUR, 0)).toInstant(timeZone)) return
         if (lastSyncAttempt == null || model.lastUpdated < lastSyncAttempt) return
 
-        val day = generatePlan(model, goal, profile, score, date, timeZone)
+        val day = generatePlan(model, goal, profile, score, date, timeZone, records.filter { it.wakeTime <= clock.now() })
         val forecast = computeForecast(day.plan, model, records, profile.sleepNeedHours, timeZone)
         plans.saveDay(day.plan, day.eatingWindow, forecast)
     }

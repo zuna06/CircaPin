@@ -11,6 +11,7 @@ import com.circapin.ui.MainDispatcherExtension
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -37,6 +38,21 @@ class GoalSetupViewModelTest {
     private val profiles = FakeUserProfileRepository(UserProfile(chronotypeScore = 14, onboardingComplete = true))
 
     private fun viewModel() = GoalSetupViewModel(goals, models, profiles, clock) { TimeZone.UTC }
+
+    @Test fun `sleep duration edits update preview and survive saving`() = runTest(UnconfinedTestDispatcher()) {
+        models.state.value = ModelState(Instant.parse("2026-11-11T00:00:00Z"), 0f, 0f, 1f, now)
+        val vm = viewModel()
+        backgroundScope.launch { vm.state.collect {} }
+        vm.setSleepNeed(9f)
+        assertEquals(9f, vm.state.value.form.sleepNeedHours)
+        assertEquals(LocalTime(20, 0), vm.state.value.preview!!.targetDlmo)
+        vm.setSleepNeed(Float.NaN)
+        vm.setSleepNeed(0f)
+        assertEquals(9f, vm.state.value.form.sleepNeedHours)
+        vm.save()
+        assertEquals(9f, profiles.observeProfile().first()!!.sleepNeedHours)
+        assertTrue(vm.state.value.form.saved)
+    }
 
     @Test
     fun `defaults to 7 AM two weeks out, with tomorrow the earliest date`() = runTest(UnconfinedTestDispatcher()) {

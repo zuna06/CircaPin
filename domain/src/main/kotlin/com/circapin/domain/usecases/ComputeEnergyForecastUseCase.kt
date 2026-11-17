@@ -52,7 +52,7 @@ class ComputeEnergyForecastUseCase {
             )
             listOf(onset to onset + need)
         }
-        val tonight = listOf(plan.targetBedtime to plan.targetBedtime + need)
+        val tonight = listOf(plan.targetBedtime to (plan.targetWakeTime ?: (plan.targetBedtime + need)))
 
         return EnergyForecast(
             date = plan.date,

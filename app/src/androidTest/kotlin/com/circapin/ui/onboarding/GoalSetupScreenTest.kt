@@ -34,11 +34,24 @@ class GoalSetupScreenTest {
         }
     }
 
+
+    @Test fun sleepDurationControlsReachTheCaller() {
+        var hours = 0f
+        compose.setContent {
+            GoalSetupScreen(GoalSetupUiState(form, LocalDate(2026, 11, 11)), {}, {}, {}, {}, null,
+                onSleepNeed = { hours = it })
+        }
+        compose.onNodeWithText("More").performScrollTo().performClick()
+        assertEquals(8.5f, hours)
+        compose.onNodeWithText("Less").performScrollTo().performClick()
+        assertEquals(7.5f, hours)
+    }
+
     @Test
     fun aDateTooEarlyIsExplained() {
         show(GoalSetupUiState(form.copy(dateTooEarly = true), LocalDate(2026, 11, 11)))
 
-        compose.onNodeWithText("Choose a date after today.").assertIsDisplayed()
+        compose.onNodeWithText("Choose a date after today.").performScrollTo().assertIsDisplayed()
     }
 
     @Test

@@ -21,6 +21,27 @@ class MigrationTest {
         listOf(CircaPinDatabase.Migration1To2()),
     )
 
+    @Test fun version2To3PreservesSleepAndMarksOldPlansForRefresh() {
+        helper.createDatabase(databaseName, 2).apply {
+            execSQL("INSERT INTO user_profile VALUES (0, 14, 7.5, 1)")
+            execSQL("INSERT INTO schedule_goal VALUES (1, NULL, 420, 20605, 'ACTIVE', 1000)")
+            execSQL("INSERT INTO daily_plan VALUES (20600, 1, 1000, 2000, 3000, 4000, 2500, 5000, NULL, NULL, NULL)")
+            execSQL("INSERT INTO eating_window VALUES (20600, 1000, 4000, 'PLAN')")
+            close()
+        }
+        val db = helper.runMigrationsAndValidate(databaseName, 3, true)
+        db.query("SELECT targetBedtimeMillis, targetWakeTimeMillis, personalizationNights, plannedShiftMinutes FROM daily_plan").use {
+            assertTrue(it.moveToFirst())
+            assertEquals(5000L, it.getLong(0))
+            assertTrue(it.isNull(1))
+            assertEquals(0, it.getInt(2))
+            assertEquals(0, it.getInt(3))
+        }
+        db.query("SELECT sleepNeedHours FROM user_profile").use { assertTrue(it.moveToFirst()); assertEquals(7.5f, it.getFloat(0)) }
+        db.query("SELECT firstMealMillis FROM eating_window").use { assertTrue(it.moveToFirst()); assertEquals(1000L, it.getLong(0)) }
+        db.close()
+    }
+
     @Test
     fun version1To2KeepsProfilesAndSleep() {
         helper.createDatabase(databaseName, 1).apply {

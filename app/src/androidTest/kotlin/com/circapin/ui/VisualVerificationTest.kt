@@ -57,7 +57,7 @@ class VisualVerificationTest {
         val now = Instant.parse("2026-11-10T13:00:00Z")
         val date = LocalDate(2026, 11, 10)
         val goal = ScheduleGoal(id = 1, targetWakeTime = LocalTime(7, 0), targetDate = LocalDate(2026, 11, 24), createdAt = now)
-        val plan = DailyPlan(date, 1, TimeWindow(now, now + 2.hours), TimeWindow(now + 12.hours, now + 15.hours), now + 7.hours, now + 15.hours, null)
+        val plan = DailyPlan(date, 1, TimeWindow(now, now + 2.hours), TimeWindow(now + 12.hours, now + 15.hours), now + 7.hours, now + 15.hours, null, targetWakeTime = now + 23.hours, personalizationNights = 7, plannedShiftMinutes = 15)
         val forecast = EnergyForecast(date, List(24) { hour -> (0.5 + 0.3 * kotlin.math.cos((hour - 16) * kotlin.math.PI / 12)).toFloat() })
         val state = HomeUiState(loading = false, goal = goal, goalStatus = GoalStatus.ACTIVE,
             model = ModelState(now + 13.hours, 2f, 1f, 1f, now), day = DayPlan(plan, EatingWindow(date, now, now + 12.5.hours), forecast))
@@ -65,6 +65,12 @@ class VisualVerificationTest {
         compose.setContent { Preview(true, scale) { HomeScreen(state, now, {}) } }
         compose.onNodeWithText("Next up", substring = true).performScrollTo().assertIsDisplayed()
         save("home-overview-dark")
+        compose.onNodeWithText("Breakfast", useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        save("meal-windows-dark")
+        listOf("Lunch", "Dinner", "Aim to fall asleep", "Planned sleep", "Wake up").forEach {
+            compose.onNodeWithText(it, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
+        }
+        save("sleep-window-dark")
         compose.onNodeWithText("Energy forecast").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Show hourly values").performScrollTo().assertIsDisplayed()
         save("forecast-dark")

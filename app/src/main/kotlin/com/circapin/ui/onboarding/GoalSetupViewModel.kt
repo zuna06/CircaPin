@@ -33,6 +33,7 @@ data class GoalForm(
     val reason: GoalReason? = null,
     val dateTooEarly: Boolean = false,
     val saved: Boolean = false,
+    val sleepNeedHours: Float = 8f,
 )
 
 /** @property preview what the goal means for the user's body clock, once the model has an estimate. */
@@ -42,7 +43,7 @@ data class GoalSetupUiState(val form: GoalForm, val earliestDate: LocalDate, val
 class GoalSetupViewModel @Inject constructor(
     private val goals: GoalRepository,
     models: ModelRepository,
-    profiles: UserProfileRepository,
+    private val profiles: UserProfileRepository,
     private val clock: Clock,
     timeZoneProvider: Provider<TimeZone>,
 ) : ViewModel() {
@@ -57,7 +58,8 @@ class GoalSetupViewModel @Inject constructor(
         combine(form, models.observeState(), profiles.observeProfile()) { form, model, profile ->
             val preview = if (model != null && profile != null && form.date >= tomorrow) {
                 val draft = ScheduleGoal(targetWakeTime = form.wakeTime, targetDate = form.date, createdAt = clock.now())
-                ShiftPlanner.progress(CircadianModel.dlmoClockTime(model, timeZone), draft, profile.sleepNeedHours, today)
+                ShiftPlanner.progress(CircadianModel.dlmoClockTime(model, timeZone), draft, form.sleepNeedHours, today,
+                    if (model.confidence < 0.5f) 30 else null)
             } else {
                 null
             }
@@ -67,6 +69,7 @@ class GoalSetupViewModel @Inject constructor(
     init {
         // Editing an existing goal starts from its values.
         viewModelScope.launch {
+            profiles.observeProfile().first()?.let { profile -> form.update { it.copy(sleepNeedHours = profile.sleepNeedHours) } }
             goals.observeActive().first()?.let { goal ->
                 form.update { it.copy(wakeTime = goal.targetWakeTime, date = maxOf(goal.targetDate, tomorrow), reason = goal.reason) }
             }
@@ -74,6 +77,9 @@ class GoalSetupViewModel @Inject constructor(
     }
 
     fun setWakeTime(time: LocalTime) = form.update { it.copy(wakeTime = time) }
+    fun setSleepNeed(hours: Float) {
+        if (hours.isFinite() && hours in 4f..12f) form.update { it.copy(sleepNeedHours = hours) }
+    }
 
     fun setDate(date: LocalDate) = form.update { it.copy(date = date, dateTooEarly = false) }
 
@@ -87,6 +93,7 @@ class GoalSetupViewModel @Inject constructor(
             return
         }
         viewModelScope.launch {
+            profiles.observeProfile().first()?.let { profiles.save(it.copy(sleepNeedHours = current.sleepNeedHours)) }
             goals.setActive(
                 ScheduleGoal(
                     reason = current.reason,

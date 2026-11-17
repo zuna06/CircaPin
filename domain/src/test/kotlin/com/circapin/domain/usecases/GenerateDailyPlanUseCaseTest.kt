@@ -83,7 +83,7 @@ class GenerateDailyPlanUseCaseTest {
         val tomorrow = generate(model(LocalTime(2, 0)), goal(nights = 1), profile(), null, TUESDAY, UTC)
         val habitualBedtime = at(TUESDAY.plusDays(1), 4, 0)
 
-        assertEquals(ShiftPlanner.MAX_ADVANCE_MINUTES_PER_DAY.minutes, habitualBedtime - tomorrow.plan.targetBedtime)
+        assertEquals(30.minutes, habitualBedtime - tomorrow.plan.targetBedtime)
         assertTrue(tomorrow.progress.shortfallMinutes > 0)
     }
 

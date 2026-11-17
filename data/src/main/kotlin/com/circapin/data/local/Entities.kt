@@ -99,6 +99,11 @@ data class DailyPlanEntity(
     val napWindowStartMillis: Long?,
     val napWindowEndMillis: Long?,
     val napMaxDurationMinutes: Int?,
+    val targetWakeTimeMillis: Long? = null,
+    @androidx.room.ColumnInfo(defaultValue = "0") val personalizationNights: Int = 0,
+    @androidx.room.ColumnInfo(defaultValue = "0") val plannedShiftMinutes: Int = 0,
+    @androidx.room.ColumnInfo(defaultValue = "0") val shortfallMinutes: Int = 0,
+    @androidx.room.ColumnInfo(defaultValue = "0") val lateWakeAdjustment: Boolean = false,
 )
 
 @Entity(tableName = "energy_forecast")

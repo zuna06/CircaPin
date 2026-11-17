@@ -32,7 +32,7 @@ class DataControlsTest {
         val export = controls.export(false)
         val root = JSONObject(export.readText())
         assertEquals(1, root.getInt("exportVersion"))
-        assertEquals(2, root.getInt("databaseVersion"))
+        assertEquals(3, root.getInt("databaseVersion"))
         DataControls.TABLES.forEach { assertTrue(root.has(it)) }
         val record = root.getJSONArray("sleep_record").getJSONObject(0)
         assertTrue(record.isNull("qualityScore"))

@@ -152,8 +152,6 @@
     <string name="plan_by">By %1$s</string>
     <string name="plan_nap">Nap</string>
     <string name="plan_nap_value">%1$s, up to %2$d min</string>
-    <string name="plan_meals">Meals</string>
-    <string name="plan_bedtime">Bedtime</string>
 
     <!-- Energy forecast -->
     <string name="forecast_title">Energy forecast</string>
@@ -277,8 +275,29 @@
     <string name="onboarding_optional">After setup, Settings explains optional notifications, background sleep sync and screen-time access. You can skip every permission and log sleep manually.</string>
     <string name="ui_next_up">Next up · %1$s</string>
     <string name="ui_check_in">Check in</string>
-    <string name="ui_first_meal">First meal</string>
-    <string name="ui_last_meal">Last meal</string>
     <string name="ui_screen_time">Screen time</string>
     <string name="ui_notifications">Notifications</string>
+    <string name="plan_breakfast">Breakfast</string>
+    <string name="plan_lunch">Lunch</string>
+    <string name="plan_dinner">Dinner</string>
+    <string name="plan_wind_down">Wind down</string>
+    <string name="plan_bedtime_window">Aim to fall asleep</string>
+    <string name="plan_sleep_window">Planned sleep</string>
+    <string name="plan_wake">Wake up</string>
+    <string name="plan_sleep_period">%1$s to %2$s (%3$s)</string>
+    <plurals name="plan_basis_observed">
+        <item quantity="one">Tuned using %1$d recent main sleep record. Your configured sleep duration is preserved.</item>
+        <item quantity="other">Tuned using %1$d recent main sleep records. Your configured sleep duration is preserved.</item>
+    </plurals>
+    <string name="plan_basis_initial">Initial estimate from your body clock and configured sleep duration. Add at least 3 nights to tune bedtime to your routine.</string>
+    <string name="plan_shift_earlier">Tonight: move sleep %1$s earlier.</string>
+    <string name="plan_shift_later">Tonight: move sleep %1$s later.</string>
+    <string name="plan_shift_hold">Tonight: keep your sleep schedule steady.</string>
+    <string name="plan_meal_note">3 meals per day. Suggested windows follow your wake time and leave time between dinner and sleep.</string>
+    <string name="goal_sleep_duration">Planned sleep duration</string>
+    <string name="goal_sleep_duration_summary">Set the sleep duration you want to protect each night. Short sleep records will not automatically reduce this.</string>
+    <string name="goal_sleep_less">Less</string>
+    <string name="goal_sleep_more">More</string>
+    <string name="plan_late_wake">Sleep was moved later because your last recorded wake leaves too little time for today\'s waking schedule. Return toward your goal gradually.</string>
+    <string name="goal_preview_note">This preview uses your current body-clock estimate. The daily plan also considers recent sleep records and recovery.</string>
 </resources>

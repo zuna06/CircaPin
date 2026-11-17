@@ -47,7 +47,7 @@ class DataControls @Inject constructor(
             }
         }
         val prefs = context.getSharedPreferences("circapin_prefs", Context.MODE_PRIVATE).all
-        val manifest = JSONObject().put("exportVersion", 1).put("databaseVersion", 2)
+        val manifest = JSONObject().put("exportVersion", 1).put("databaseVersion", 3)
             .put("exportedAt", kotlin.time.Clock.System.now().toString()).put("preferences", JSONObject(prefs))
             .put("csvNullValue", "\\N")
         val directory = File(context.cacheDir, "exports").apply { mkdirs() }

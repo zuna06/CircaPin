@@ -42,7 +42,7 @@ object ShiftPlanner {
             CircularTime.minuteOfDay(targetWake) - sleepNeedHours * 60 - SLEEP_ONSET_AFTER_DLMO_MINUTES,
         )
 
-    fun progress(currentDlmo: LocalTime, goal: ScheduleGoal, sleepNeedHours: Float, planDate: LocalDate): GoalProgress {
+    fun progress(currentDlmo: LocalTime, goal: ScheduleGoal, sleepNeedHours: Float, planDate: LocalDate, stepCapMinutes: Int? = null): GoalProgress {
         val target = targetDlmo(goal.targetWakeTime, sleepNeedHours)
         val shift = CircularTime.difference(
             to = CircularTime.minuteOfDay(currentDlmo),
@@ -50,7 +50,8 @@ object ShiftPlanner {
         ).roundToInt()
         val magnitude = abs(shift)
         val nights = (goal.targetDate.toEpochDays() - planDate.toEpochDays()).toInt().coerceAtLeast(0)
-        val cap = if (shift > 0) MAX_ADVANCE_MINUTES_PER_DAY else MAX_DELAY_MINUTES_PER_DAY
+        val directionCap = if (shift > 0) MAX_ADVANCE_MINUTES_PER_DAY else MAX_DELAY_MINUTES_PER_DAY
+        val cap = stepCapMinutes?.coerceIn(1, directionCap) ?: directionCap
 
         val step = when {
             magnitude <= ON_TARGET_MINUTES -> magnitude

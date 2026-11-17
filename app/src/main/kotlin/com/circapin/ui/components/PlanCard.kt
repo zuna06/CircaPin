@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -47,9 +48,25 @@ fun PlanCard(plan: DailyPlan, eatingWindow: EatingWindow?, modifier: Modifier = 
                 )
             }
             eatingWindow?.let {
-                PlanRow(stringResource(R.string.plan_meals), TimeWindow(it.firstMeal, it.lastMeal).formatted())
+                PlanRow(stringResource(R.string.plan_breakfast), it.breakfast.formatted())
+                PlanRow(stringResource(R.string.plan_lunch), it.lunch.formatted())
+                PlanRow(stringResource(R.string.plan_dinner), it.dinner.formatted())
+                Text(stringResource(R.string.plan_meal_note), style = MaterialTheme.typography.bodySmall)
             }
-            PlanRow(stringResource(R.string.plan_bedtime), plan.targetBedtime.formattedTime(), emphasised = true)
+            PlanRow(stringResource(R.string.plan_wind_down), plan.windDown.formattedTime())
+            PlanRow(stringResource(R.string.plan_bedtime_window), plan.bedtimeWindow.formatted(), emphasised = true)
+            plan.sleepWindow?.let {
+                PlanRow(stringResource(R.string.plan_sleep_window), stringResource(R.string.plan_sleep_period,
+                    it.start.formattedTime(), it.end.formattedTime(), durationText((it.end - it.start).inWholeMinutes.toInt())), emphasised = true)
+                PlanRow(stringResource(R.string.plan_wake), "${it.end.formattedDate()} · ${it.end.formattedTime()}")
+            }
+            Text(if (plan.personalizationNights >= 3) pluralStringResource(R.plurals.plan_basis_observed, plan.personalizationNights, plan.personalizationNights) else stringResource(R.string.plan_basis_initial), style = MaterialTheme.typography.bodySmall)
+            Text(when {
+                plan.lateWakeAdjustment -> stringResource(R.string.plan_late_wake)
+                plan.plannedShiftMinutes > 0 -> stringResource(R.string.plan_shift_earlier, durationText(plan.plannedShiftMinutes))
+                plan.plannedShiftMinutes < 0 -> stringResource(R.string.plan_shift_later, durationText(-plan.plannedShiftMinutes))
+                else -> stringResource(R.string.plan_shift_hold)
+            }, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

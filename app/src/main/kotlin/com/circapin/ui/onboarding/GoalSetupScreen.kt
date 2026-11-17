@@ -61,6 +61,7 @@ fun GoalSetupRoute(onSaved: () -> Unit, onCancel: (() -> Unit)?, viewModel: Goal
         onReason = viewModel::toggleReason,
         onSave = viewModel::save,
         onCancel = onCancel,
+        onSleepNeed = viewModel::setSleepNeed,
     )
 }
 
@@ -73,6 +74,7 @@ fun GoalSetupScreen(
     onReason: (GoalReason) -> Unit,
     onSave: () -> Unit,
     onCancel: (() -> Unit)?,
+    onSleepNeed: (Float) -> Unit = {},
 ) {
     var pickingTime by remember { mutableStateOf(false) }
     var pickingDate by remember { mutableStateOf(false) }
@@ -90,6 +92,19 @@ fun GoalSetupScreen(
     ) { padding ->
         ScreenColumn(Modifier.padding(padding), maxWidth = 600.dp) {
             Text(stringResource(R.string.goal_intro), style = MaterialTheme.typography.bodyLarge)
+
+            Text(stringResource(R.string.goal_sleep_duration), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.goal_sleep_duration_summary), style = MaterialTheme.typography.bodySmall)
+            androidx.compose.foundation.layout.Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                OutlinedButton(onClick = { onSleepNeed(state.form.sleepNeedHours - 0.5f) }, enabled = state.form.sleepNeedHours > 4f) {
+                    Text(stringResource(R.string.goal_sleep_less))
+                }
+                Text(durationText((state.form.sleepNeedHours * 60).toInt()))
+                OutlinedButton(onClick = { onSleepNeed(state.form.sleepNeedHours + 0.5f) }, enabled = state.form.sleepNeedHours < 12f) {
+                    Text(stringResource(R.string.goal_sleep_more))
+                }
+            }
 
             Text(wakeLabel, style = MaterialTheme.typography.titleMedium)
             OutlinedButton(onClick = { pickingTime = true }, modifier = Modifier.fillMaxWidth()) {
@@ -119,7 +134,8 @@ fun GoalSetupScreen(
                 }
             }
 
-            state.preview?.let { Preview(it) }
+            state.preview?.let { Preview(it)
+                Text(stringResource(R.string.goal_preview_note), style = MaterialTheme.typography.bodySmall) }
 
             Button(onClick = onSave, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.action_save_goal))

@@ -68,6 +68,17 @@ class RefreshTodayUseCaseTest {
         source = SleepSource.MANUAL,
     )
 
+
+    @Test fun `an old plan gets upgraded once with personalized sleep fields`() = runTest {
+        refresh(emptyList(), profile(), model(LocalTime(0, 0)), goal(), synced, UTC)
+        plans.plans[TUESDAY] = plans.plans.getValue(TUESDAY).copy(targetWakeTime = null)
+        refresh(listOf(lastNight), profile(), model(LocalTime(0, 0)), goal(), synced, UTC)
+        assertEquals(2, plans.saves)
+        assertNotNull(plans.plans.getValue(TUESDAY).targetWakeTime)
+        refresh(listOf(lastNight), profile(), model(LocalTime(0, 0)), goal(), synced, UTC)
+        assertEquals(2, plans.saves)
+    }
+
     @Test
     fun `the plan is generated once and then kept for the day`() = runTest {
         refresh(emptyList(), profile(), model(LocalTime(0, 0)), goal(), synced, UTC)

@@ -112,14 +112,15 @@ fun HomeScreen(state: HomeUiState, now: Instant, onEditGoal: () -> Unit, onProgr
             } else if ((state.goalStatus ?: goal.status) == GoalStatus.ACTIVE) {
                 GoalCard(goal, state.progress, onEditGoal, onProgress)
             }
-            state.progress?.let { ShortfallCard(it, goal) }
+            state.progress?.let { ShortfallCard(if (state.day?.plan?.targetWakeTime != null) it.copy(shortfallMinutes = state.day.plan.shortfallMinutes) else it, goal) }
             val day = state.day
             if (day != null) {
                 NextActionCard(day.plan, day.eatingWindow, now)
                 AdaptivePair(first = { PlanCard(day.plan, day.eatingWindow) }, second = {
                     day.forecast?.let { forecast ->
-                        val onset = state.model?.estimatedDlmo?.plus(2.hours)?.toLocalDateTime(TimeZone.currentSystemDefault())?.hour
-                        val sleepHours = onset?.let { start -> (0 until kotlin.math.ceil(state.sleepNeedHours.toDouble()).toInt()).map { (start + it) % 24 }.toSet() }.orEmpty()
+                        val onset = day.plan.targetBedtime.toLocalDateTime(TimeZone.currentSystemDefault()).hour
+                        val duration = day.plan.sleepWindow?.let { (it.end - it.start).inWholeMinutes / 60.0 } ?: state.sleepNeedHours.toDouble()
+                        val sleepHours = (0 until kotlin.math.ceil(duration).toInt()).map { (onset + it) % 24 }.toSet()
                         ForecastCard(forecast, sleepHours)
                     }
                 })
@@ -175,8 +176,13 @@ private fun NextActionCard(plan: com.circapin.domain.entities.DailyPlan, meals: 
         add(R.string.plan_bright_light to plan.brightLight.start)
         add(R.string.plan_avoid_light to plan.avoidLight.start)
         add(R.string.plan_caffeine to plan.caffeineCutoff)
-        add(R.string.plan_bedtime to plan.targetBedtime)
-        meals?.let { add(R.string.ui_first_meal to it.firstMeal); add(R.string.ui_last_meal to it.lastMeal) }
+        add(R.string.plan_wind_down to plan.windDown)
+        add(R.string.plan_bedtime_window to plan.bedtimeWindow.start)
+        meals?.let {
+            add(R.string.plan_breakfast to it.breakfast.start)
+            add(R.string.plan_lunch to it.lunch.start)
+            add(R.string.plan_dinner to it.dinner.start)
+        }
         plan.nap?.let { add(R.string.plan_nap to it.window.start) }
     }
     val next = actions.filter { it.second >= now }.minByOrNull { it.second } ?: return

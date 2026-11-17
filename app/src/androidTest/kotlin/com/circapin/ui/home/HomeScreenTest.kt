@@ -48,6 +48,9 @@ class HomeScreenTest {
         caffeineCutoff = now + 4.hours,
         targetBedtime = now + 12.hours,
         nap = NapWindow(TimeWindow(now + 6.hours, now + 8.hours), 20.minutes),
+        targetWakeTime = now + 20.hours,
+        personalizationNights = 7,
+        plannedShiftMinutes = 20,
     )
     private val forecast = EnergyForecast(plan.date, List(24) { hour -> if (hour == 17) 0.9f else if (hour == 4) 0.1f else 0.5f })
 
@@ -60,7 +63,7 @@ class HomeScreenTest {
         goal = goal,
         progress = progress,
         model = model,
-        day = DayPlan(plan, EatingWindow(plan.date, now, now + 9.hours), forecast),
+        day = DayPlan(plan.copy(shortfallMinutes = progress.shortfallMinutes), EatingWindow(plan.date, now, now + 9.hours), forecast),
         score = SleepScore(plan.date, 74, 100, 67, null, 90, SleepScoreNote(SleepScoreNoteKind.LATE, 40)),
     )
 
@@ -82,7 +85,7 @@ class HomeScreenTest {
     fun everyPlanItemIsShown() {
         show(full())
 
-        listOf("Seek bright light", "Avoid bright light", "Last caffeine", "Nap", "Meals", "Bedtime").forEach {
+        listOf("Seek bright light", "Avoid bright light", "Last caffeine", "Nap", "Breakfast", "Lunch", "Dinner", "Wind down", "Aim to fall asleep", "Planned sleep", "Wake up").forEach {
             compose.onNodeWithText(it, useUnmergedTree = true).performScrollTo().assertIsDisplayed()
         }
         compose.onNodeWithText(", up to 20 min", substring = true, useUnmergedTree = true).performScrollTo().assertIsDisplayed()

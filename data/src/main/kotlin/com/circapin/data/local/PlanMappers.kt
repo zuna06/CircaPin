@@ -47,6 +47,11 @@ internal fun DailyPlanEntity.toDomain() = DailyPlan(
     avoidLight = TimeWindow(avoidLightStartMillis.toInstant(), avoidLightEndMillis.toInstant()),
     caffeineCutoff = caffeineCutoffMillis.toInstant(),
     targetBedtime = targetBedtimeMillis.toInstant(),
+    targetWakeTime = targetWakeTimeMillis?.toInstant(),
+    personalizationNights = personalizationNights,
+    plannedShiftMinutes = plannedShiftMinutes,
+    shortfallMinutes = shortfallMinutes,
+    lateWakeAdjustment = lateWakeAdjustment,
     nap = if (napWindowStartMillis != null && napWindowEndMillis != null && napMaxDurationMinutes != null) {
         NapWindow(
             TimeWindow(napWindowStartMillis.toInstant(), napWindowEndMillis.toInstant()),
@@ -66,6 +71,11 @@ internal fun DailyPlan.toEntity() = DailyPlanEntity(
     avoidLightEndMillis = avoidLight.end.toEpochMilliseconds(),
     caffeineCutoffMillis = caffeineCutoff.toEpochMilliseconds(),
     targetBedtimeMillis = targetBedtime.toEpochMilliseconds(),
+    targetWakeTimeMillis = targetWakeTime?.toEpochMilliseconds(),
+    personalizationNights = personalizationNights,
+    plannedShiftMinutes = plannedShiftMinutes,
+    shortfallMinutes = shortfallMinutes,
+    lateWakeAdjustment = lateWakeAdjustment,
     napWindowStartMillis = nap?.window?.start?.toEpochMilliseconds(),
     napWindowEndMillis = nap?.window?.end?.toEpochMilliseconds(),
     napMaxDurationMinutes = nap?.maxDuration?.inWholeMinutes?.toInt(),
